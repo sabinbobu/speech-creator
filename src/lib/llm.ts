@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { approximateWordsForSeconds, formatDuration } from "@/lib/duration";
 import type { RewriteRequest } from "@/lib/script/fit";
 import type { Occasion, Script } from "@/lib/script/types";
@@ -10,14 +10,17 @@ import { getTemplate } from "@/lib/templates";
  * The duration engine is deterministic and stays that way — the model writes
  * prose and nothing else. It never decides how long anything is, and it is
  * never asked to regenerate a whole speech once one exists.
+ *
+ * Provider: OpenAI. The model id is configurable via OPENAI_MODEL so a better
+ * model can be adopted without a code change.
  */
 
-const MODEL = "claude-opus-5";
+const MODEL = process.env.OPENAI_MODEL ?? "gpt-4o";
 
 export class MissingApiKeyError extends Error {
   constructor() {
     super(
-      "Lipsește ANTHROPIC_API_KEY. Teleprompterul funcționează fără el — " +
+      "Lipsește OPENAI_API_KEY. Teleprompterul funcționează fără el — " +
         "lipește-ți textul manual în editor.",
     );
     this.name = "MissingApiKeyError";
@@ -32,12 +35,12 @@ export class RefusedError extends Error {
 }
 
 export function hasApiKey(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return Boolean(process.env.OPENAI_API_KEY);
 }
 
-function client(): Anthropic {
+function client(): OpenAI {
   if (!hasApiKey()) throw new MissingApiKeyError();
-  return new Anthropic();
+  return new OpenAI();
 }
 
 const SYSTEM = `Ești un scriitor de discursuri și antrenor de livrare, nativ român.
@@ -64,6 +67,10 @@ Reguli:
 Lungimea contează mai mult decât orice altceva. Când primești un număr țintă de
 cuvinte, respectă-l — un discurs care depășește timpul e un discurs ratat.`;
 
+/**
+ * Strict structured outputs require every property listed in `required` and
+ * `additionalProperties: false` at every level, or the API rejects the schema.
+ */
 const SECTIONS_SCHEMA = {
   type: "object",
   properties: {
@@ -105,12 +112,22 @@ function intakeBlock(occasion: Occasion, intake: Record<string, string>): string
     .join("\n\n");
 }
 
-/** Concatenate the text blocks, ignoring thinking and any other block type. */
-function textFrom(content: Array<{ type: string }>): string {
-  return content
-    .filter((b): b is { type: "text"; text: string } => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+/** Pull the text out of a completion, surfacing a refusal as an error. */
+function messageText(completion: OpenAI.Chat.Completions.ChatCompletion): string {
+  const choice = completion.choices[0];
+  if (!choice) throw new Error("Modelul nu a întors niciun răspuns.");
+
+  // Structured outputs can decline; the refusal arrives on its own field
+  // rather than as an error status, so it has to be checked explicitly.
+  if (choice.message.refusal) {
+    throw new RefusedError(choice.message.refusal);
+  }
+  if (choice.finish_reason === "length") {
+    throw new Error(
+      "Răspunsul a fost tăiat de limita de tokeni. Încearcă o durată mai mică.",
+    );
+  }
+  return choice.message.content ?? "";
 }
 
 /**
@@ -120,7 +137,7 @@ function textFrom(content: Array<{ type: string }>): string {
 export async function generateSections(
   input: GenerateInput,
 ): Promise<Array<{ id: string; text: string }>> {
-  const anthropic = client();
+  const openai = client();
 
   const sectionBriefs = input.sections
     .map((s) => {
@@ -151,27 +168,24 @@ Scrie fiecare secțiune. Respectă numărul de cuvinte indicat pentru fiecare �
 e singura cale prin care discursul iese la fix. Secțiunile trebuie să curgă una
 din alta ca un singur discurs, nu ca cinci fragmente separate.`;
 
-  const response = await anthropic.beta.messages.create({
+  const completion = await openai.chat.completions.create({
     model: MODEL,
-    max_tokens: 16000,
-    // Safety classifiers can decline a request; the default fallback re-runs it
-    // on a suitable model instead of handing back an error.
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    thinking: { type: "adaptive" },
-    output_config: {
-      effort: "high",
-      format: { type: "json_schema", schema: SECTIONS_SCHEMA },
+    max_completion_tokens: 16000,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "sectiuni_discurs",
+        strict: true,
+        schema: SECTIONS_SCHEMA,
+      },
     },
-    system: SYSTEM,
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      { role: "system", content: SYSTEM },
+      { role: "user", content: prompt },
+    ],
   });
 
-  if (response.stop_reason === "refusal") {
-    throw new RefusedError(response.stop_details?.explanation);
-  }
-
-  const raw = textFrom(response.content);
+  const raw = messageText(completion);
   const parsed = JSON.parse(raw) as { sections: Array<{ id: string; text: string }> };
   return parsed.sections;
 }
@@ -182,7 +196,7 @@ din alta ca un singur discurs, nu ca cinci fragmente separate.`;
  * details out of the speech.
  */
 export async function rewriteSection(req: RewriteRequest): Promise<string> {
-  const anthropic = client();
+  const openai = client();
 
   const words = approximateWordsForSeconds(req.targetSeconds, {
     profile: req.script.profile,
@@ -221,20 +235,14 @@ ${req.section.text.trim()}
 
 ${rest ? `RESTUL DISCURSULUI (context — nu îl rescrie, doar evită să repeți):\n${rest}` : ""}`;
 
-  const response = await anthropic.beta.messages.create({
+  const completion = await openai.chat.completions.create({
     model: MODEL,
-    max_tokens: 8000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    thinking: { type: "adaptive" },
-    output_config: { effort: "medium" },
-    system: SYSTEM,
-    messages: [{ role: "user", content: prompt }],
+    max_completion_tokens: 8000,
+    messages: [
+      { role: "system", content: SYSTEM },
+      { role: "user", content: prompt },
+    ],
   });
 
-  if (response.stop_reason === "refusal") {
-    throw new RefusedError(response.stop_details?.explanation);
-  }
-
-  return textFrom(response.content).trim();
+  return messageText(completion).trim();
 }

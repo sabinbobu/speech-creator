@@ -55,7 +55,8 @@ Teleprompterul funcționează **fără nicio cheie API** — lipești textul și
 Pentru generarea de discursuri:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export OPENAI_API_KEY=sk-...
+export OPENAI_MODEL=gpt-4o      # opțional; implicit gpt-4o
 ```
 
 Fără cheie, `/api/generate` întoarce 503 cu un mesaj care trimite utilizatorul
@@ -250,7 +251,7 @@ Asta e moat-ul, nu prompt-ul.
 src/lib/duration/     motor determinist — silabe, pauze, timeline, calibrare
 src/lib/script/       model de script, estimare pe secțiuni, bucla de ajustare
 src/lib/templates.ts  3 șabloane + cele 6 întrebări de intake
-src/lib/llm.ts        SINGURUL loc cu apeluri la model (Claude Opus 5)
+src/lib/llm.ts        SINGURUL loc cu apeluri la model (OpenAI)
 src/components/       teleprompterul
 src/app/api/          generate (o variantă) + fit (un pas)
 eval/                 corpusuri, harness, calibrare
@@ -277,8 +278,10 @@ vinde.
 e 60s, așa că generarea poate expira; bucla e deja împărțită pe cereri, ceea ce
 ajută, dar pentru trafic real trebuie Pro.
 
-**Modelul.** `claude-opus-5`, cu gândire adaptivă și fallback server-side activat
-implicit pentru cazul în care clasificatoarele de siguranță refuză o cerere.
+**Modelul.** OpenAI, prin `chat.completions`, cu structured outputs în mod
+`strict` pentru generare. Id-ul modelului se configurează prin `OPENAI_MODEL`
+(implicit `gpt-4o`), ca să poți trece pe un model mai bun fără modificări de cod.
+Refuzurile vin pe câmpul `refusal`, nu ca eroare HTTP, și sunt tratate explicit.
 
 ---
 
