@@ -15,7 +15,17 @@ import { getTemplate } from "@/lib/templates";
  * model can be adopted without a code change.
  */
 
-const MODEL = process.env.OPENAI_MODEL ?? "gpt-4o";
+/**
+ * Resolved per call rather than captured at module load, so an eval can sweep
+ * candidate models in one process without reimporting.
+ */
+function model(): string {
+  // Default picked by measurement, not by reputation — see eval/model-bench.ts.
+  // gpt-5.2 landed closest to the requested duration on the real task and wrote
+  // the most concrete Romanian. gpt-4o was 20.7% short and reached for exactly
+  // the boilerplate the system prompt forbids.
+  return process.env.OPENAI_MODEL ?? "gpt-5.2";
+}
 
 export class MissingApiKeyError extends Error {
   constructor() {
@@ -169,7 +179,7 @@ e singura cale prin care discursul iese la fix. Secțiunile trebuie să curgă u
 din alta ca un singur discurs, nu ca cinci fragmente separate.`;
 
   const completion = await openai.chat.completions.create({
-    model: MODEL,
+    model: model(),
     max_completion_tokens: 16000,
     response_format: {
       type: "json_schema",
@@ -236,7 +246,7 @@ ${req.section.text.trim()}
 ${rest ? `RESTUL DISCURSULUI (context — nu îl rescrie, doar evită să repeți):\n${rest}` : ""}`;
 
   const completion = await openai.chat.completions.create({
-    model: MODEL,
+    model: model(),
     max_completion_tokens: 8000,
     messages: [
       { role: "system", content: SYSTEM },

@@ -56,7 +56,7 @@ Pentru generarea de discursuri:
 
 ```bash
 export OPENAI_API_KEY=sk-...
-export OPENAI_MODEL=gpt-4o      # opțional; implicit gpt-4o
+export OPENAI_MODEL=gpt-5.2     # opțional; implicit gpt-5.2
 ```
 
 Fără cheie, `/api/generate` întoarce 503 cu un mesaj care trimite utilizatorul
@@ -280,7 +280,7 @@ ajută, dar pentru trafic real trebuie Pro.
 
 **Modelul.** OpenAI, prin `chat.completions`, cu structured outputs în mod
 `strict` pentru generare. Id-ul modelului se configurează prin `OPENAI_MODEL`
-(implicit `gpt-4o`), ca să poți trece pe un model mai bun fără modificări de cod.
+(implicit `gpt-5.2`), ca să poți trece pe un model mai bun fără modificări de cod.
 Refuzurile vin pe câmpul `refusal`, nu ca eroare HTTP, și sunt tratate explicit.
 
 ---
