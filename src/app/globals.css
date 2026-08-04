@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+/*
+ * Cadență — visual language.
+ *
+ * Warm charcoal and brass rather than the default dark-mode blue-grey: the
+ * primary wedge is wedding and anniversary speeches, and the app is most often
+ * open in a dim room minutes before someone stands up to speak. A serif
+ * wordmark and lining numerals do the rest — this is a stopwatch for a toast,
+ * not a dashboard.
+ */
+@theme {
+  --color-ink: #14110e;
+  --color-surface: #1d1915;
+  --color-surface-2: #262019;
+  --color-line: #3a3128;
+  --color-cream: #efe9e0;
+  --color-muted: #a79e92;
+  --color-faint: #6d6459;
+  --color-brass: #e0a82e;
+  --color-brass-dim: #8c6a1d;
+  --color-sage: #7fa87f;
+  --color-rust: #c9663f;
+
+  --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino,
+    serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+html {
+  background-color: var(--color-ink);
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-cream);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers that line up in a column when they tick. */
+.tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.display {
+  font-family: var(--font-display);
+}
+
+textarea,
+input,
+select {
+  font-family: inherit;
+}
+
+::selection {
+  background: var(--color-brass);
+  color: var(--color-ink);
+}
+
+/* Focus ring that stays legible on both the dark chrome and the brass fills. */
+:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
