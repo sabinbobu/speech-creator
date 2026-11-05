@@ -1,0 +1,19 @@
+ASM330LHH CDD quick reference
+============================
+
+Startup:
+  1. Call CddAsm330lhh_Init(config). E_OK means initialization was accepted.
+  2. Call CddAsm330lhh_MainFunction periodically from task context.
+  3. Check CddAsm330lhh_GetInitStatus() until READY or FAILED.
+
+Sampling:
+  1. Call CddAsm330lhh_StartRead() to request a non-blocking sample read.
+  2. Call CddAsm330lhh_MainFunction periodically to process SPI completion.
+  3. Call CddAsm330lhh_GetLatestSample() to consume a completed sample.
+
+Configuration and shutdown requests are also asynchronous. Their E_OK return
+means the request was queued. The SPI sequence-end callback only latches the
+result; decoding and state transitions occur in CddAsm330lhh_MainFunction.
+
+Al077a uses SPI sequence 1 for the IMU. The physical SPI configuration is
+maintained separately and must not be changed as part of CDD callback work.

@@ -1,0 +1,59 @@
+# ------------------------------------------------------------------------------
+# make file containing specialized MCAL flags
+# ------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+#  FLAGS - The result of this file is to add the MCAL include files
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+
+C_INCLUDES_MCAL  = $(PATH_SRC_MCAL_FAMILY_DERIV)/Mcu                               \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Port                              \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Dio                               \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Adc                               \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Fee                               \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/LPTMR                             \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/TrigMux                           \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/SysCrc                            \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Lpit                              \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Pdb                               \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Pwm                               \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Icu                               \
+                   $(PATH_SRC_GEN)/Mcal/Dio                                        \
+                   $(PATH_SRC_GEN)/Mcal/Pwm                                        \
+                   $(PATH_SRC_GEN)/Mcal/Port                                       \
+                   $(PATH_SRC_GEN)/Mcal/Gpt                                        \
+                   $(PATH_SRC_GEN)/Mcal/Mcu                                        \
+                   $(PATH_SRC_GEN)/Mcal/Adc                                        \
+                   $(PATH_SRC_GEN)/Mcal/Lpit                                       \
+                   $(PATH_SRC_GEN)/Mcal/TrigMux                                    \
+                   $(PATH_SRC_GEN)/Mcal/SysCrc                                     \
+                   $(PATH_SRC_GEN)/Mcal/Pdb                                        \
+                   $(PATH_SRC_GEN)/Mcal/LPTMR                                      \
+                   $(PATH_SRC_GEN)/Mcal/Wdg
+
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+#  FILES - The result of this file is to add the specific Mcal source files
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+
+FILES_SRC_MCAL   = $(PATH_SRC_MCAL_FAMILY_DERIV)/Dio/Dio                          \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Gpt/Gpt                          \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Port/Port                        \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/LPTMR/LPTMR                      \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Pwm/Pwm                          \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Mcu/Mcu                          \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Adc/Adc                          \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Adc/Adc_Dma                      \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Adc/Adc_Drv                      \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Pdb/Pdb                          \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Pdb/Pdb_Drv                      \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/TrigMux/TrigMux                  \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/TrigMux/TrigMux_Drv              \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Lpit/Lpit                        \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Lpit/Lpit_Drv                    \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/SysCrc/SysCrc                    \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Wdg/Wdg                          \
+                   $(PATH_SRC_MCAL_FAMILY_DERIV)/Fee/Fee

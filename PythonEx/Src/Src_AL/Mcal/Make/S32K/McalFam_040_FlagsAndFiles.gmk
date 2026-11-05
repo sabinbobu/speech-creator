@@ -1,0 +1,72 @@
+
+# ------------------------------------------------------------------------------
+# make file containing specialized MCAL flags and files for S32K Family
+# ------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+#  FLAGS - The result of this file is to add the MCAL include files
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+
+C_INCLUDES_MCAL = $(PATH_SRC_NXP_SDK)/osif                                        \
+                  $(PATH_SRC_NXP_SDK)/devices                                     \
+                  $(PATH_SRC_NXP_SDK)/devices/$(TYP_FAMILY)$(TYP_CHIP)/startup    \
+                  $(PATH_SRC_NXP_SDK)/devices/common                              \
+                  $(PATH_SRC_NXP_SDK)/drivers/inc                                 \
+                  $(PATH_SRC_NXP_SDK)/drivers/src/ftm                             \
+                  $(PATH_SRC_NXP_SDK)/drivers/src/adc                             \
+                  $(PATH_SRC_NXP_SDK)/drivers/src/pdb                             \
+                  $(PATH_SRC_NXP_SDK)/drivers/src/trgmux                          \
+                  $(PATH_SRC_NXP_SDK)/drivers/src/pins                            \
+                  $(PATH_SRC_NXP_SDK)/drivers/src/adc                             \
+                  $(PATH_SRC_NXP_SDK)/drivers/src/lptmr                           \
+                  $(PATH_SRC_NXP_SDK)/drivers/src/crc                             \
+                  $(PATH_SRC_NXP_SDK)/drivers/src/flash                           \
+                  $(PATH_SRC_NXP_SDK)/drivers/src/clock/S32K1xx                   \
+                  $(PATH_SRC_NXP_SDK)/pal/inc
+
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+#  FILES - The result of this file is to add the specific Mcal source files
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+
+FILES_NXP_SDK    = $(PATH_SRC_NXP_SDK)/osif/osif_baremetal                        \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/clock/S32K1xx/clock_S32K1xx    \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/ftm/ftm_common                 \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/ftm/ftm_hw_access              \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/ftm/ftm_ic_driver              \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/ftm/ftm_mc_driver              \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/ftm/ftm_oc_driver              \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/ftm/ftm_pwm_driver             \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/ftm/ftm_qd_driver              \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/mpu/mpu_driver                 \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/mpu/mpu_hw_access              \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/adc/adc_driver                 \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/pdb/pdb_driver                 \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/pdb/pdb_hw_access              \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/pins/pins_driver               \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/pins/pins_port_hw_access       \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/trgmux/trgmux_driver           \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/trgmux/trgmux_hw_access        \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/flash/flash_driver             \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/interrupt/interrupt_manager    \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/lptmr/lptmr_driver             \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/lptmr/lptmr_hw_access          \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/crc/crc_driver                 \
+                   $(PATH_SRC_NXP_SDK)/drivers/src/crc/crc_hw_access              \
+                   $(PATH_SRC_NXP_SDK)/pal/src/pwm/pwm_pal                        \
+                   $(PATH_SRC_NXP_SDK)/pal/src/adc/adc_pal                        \
+                   $(PATH_SRC_NXP_SDK)/pal/src/adc/adc_irq
+
+
+FILES_SRC_MCAL  := $(FILES_NXP_SDK)                                               \
+                   $(FILES_SRC_MCAL)
+
+FILES_NOMISRA   := $(FILES_NOMISRA)                                               \
+                   $(FILES_NXP_SDK)
+
+
+
+include $(PATH_SRC_MCAL_BASE)/Make/$(TYP_FAMILY)/$(TYP_FAMILY)_$(TYP_DERIV)/McalDeriv_040_FlagsAndFiles.gmk

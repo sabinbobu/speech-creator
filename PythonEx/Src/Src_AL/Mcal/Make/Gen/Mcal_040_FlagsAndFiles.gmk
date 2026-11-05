@@ -1,0 +1,35 @@
+
+# ------------------------------------------------------------------------------
+# make file containing specialized MCAL flags
+# ------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+#  FLAGS - The result of this file is to add the MCAL include files
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+
+C_INCLUDES_MCAL  = $(PATH_SRC_GEN)/Mcal/Adc                                   \
+                   $(PATH_SRC_GEN)/Mcal/Dio                                   \
+                   $(PATH_SRC_GEN)/Mcal/Gpt                                   \
+                   $(PATH_SRC_GEN)/Mcal/Mcu                                   \
+                   $(PATH_SRC_GEN)/Mcal/Port                                  \
+                   $(PATH_SRC_GEN)/Mcal/LPTMR                                 \
+                   $(PATH_SRC_GEN)/Mcal/Pwm                                   \
+                   $(PATH_SRC_GEN)/Mcal/Wdg
+
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+#  FILES - The result of this file is to add the specific Mcal source files
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+
+FILES_SRC_MCAL := $(FILES_SRC_MCAL)
+                  $(PATH_SRC_MCAL_FAMILY)/Adc/Adc                        \
+                  $(PATH_SRC_MCAL_FAMILY)/Dio/Dio                        \
+                  $(PATH_SRC_MCAL_FAMILY)/Gpt/Gpt                        \
+                  $(PATH_SRC_MCAL_FAMILY)/Mcu/Mcu                        \
+                  $(PATH_SRC_MCAL_FAMILY)/Port/Port                      \
+                  $(PATH_SRC_MCAL_FAMILY)/LPTMR/LPTMR                    \
+                  $(PATH_SRC_MCAL_FAMILY)/Pwm/Pwm                        \
+                  $(PATH_SRC_MCAL_FAMILY)/Wdg/Wdg

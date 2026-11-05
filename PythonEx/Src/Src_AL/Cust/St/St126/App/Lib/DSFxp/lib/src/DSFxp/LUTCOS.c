@@ -1,0 +1,42 @@
+/**
+ * @file       $RCSfile: LUTCOS.c $
+ * @brief      This file contains table data for trigonometric functions.
+ * @author     Klaus Goebel, Dagmar Andoleit
+ * @copyright  (c) 2012, dSPACE GmbH, Paderborn, Germany
+ * @version    $Revision: 1.3 $ $Date: 2013/11/21 07:50:23CET $
+ */
+
+#include "dsfxp.h"
+
+/******************************************************************************
+*
+* FUNCTION:
+*   F__I16TANI16(v)
+*
+* DESCRIPTION:
+*   Calculates cosine as series approach.
+*   Scaling is less than Int16, 2^-14
+*
+* PARAMETERS:
+*   Int16   v      input value
+*
+* RETURNS:
+*   Int16   fcn    return value 
+*
+******************************************************************************/
+const UInt16 cosLUT[129] = 
+{
+    16384U,16383U,16379U,16373U,16364U,16353U,16340U,16324U,16305U,16284U,16261U,16235U,
+    16207U,16176U,16143U,16107U,16069U,16029U,15986U,15941U,15893U,15843U,15791U,15736U,
+    15679U,15619U,15557U,15493U,15426U,15357U,15286U,15213U,15137U,15059U,14978U,14896U,
+    14811U,14724U,14635U,14543U,14449U,14354U,14256U,14155U,14053U,13949U,13842U,13733U,
+    13623U,13510U,13395U,13279U,13160U,13039U,12916U,12792U,12665U,12537U,12406U,12274U,
+    12140U,12004U,11866U,11727U,11585U,11442U,11297U,11151U,11003U,10853U,10702U,10549U,
+    10394U,10238U,10080U,9921U,9760U,9598U,9434U,9269U,9102U,8935U,8765U,8595U,8423U,8250U,
+    8076U,7900U,7723U,7545U,7366U,7186U,7005U,6823U,6639U,6455U,6270U,6084U,5897U,5708U,
+    5520U,5330U,5139U,4948U,4756U,4563U,4370U,4176U,3981U,3786U,3590U,3393U,3196U,2999U,
+    2801U,2603U,2404U,2205U,2006U,1806U,1606U,1406U,1205U,1005U,804U,603U,402U,201U,0U
+};	/* LSB: 2^-14 OFF:  0 MIN/MAX: -2 .. 1.999938965 */
+
+
+/* END F__I16TANI16() */

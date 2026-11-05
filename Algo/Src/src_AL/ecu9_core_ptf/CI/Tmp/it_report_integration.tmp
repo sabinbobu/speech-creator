@@ -1,0 +1,4 @@
+.width 12  9
+.headers on
+.mode column
+select * from v_it_results;

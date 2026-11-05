@@ -1,0 +1,8 @@
+@echo off
+SETLOCAL ENABLEDELAYEDEXPANSION
+cls
+
+SET CONFIGURATION=INTEGRATION
+
+
+call do_integration.bat

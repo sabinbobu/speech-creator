@@ -1,0 +1,50 @@
+# ******************************************************************************
+# (C) Automotive-Lighting Reutlingen GmbH  -  ALRT/EEG
+#     Tuebinger Strasse 123, 72762 Reutlingen, Germany
+# ******************************************************************************
+
+# ------------------------------------------------------------------------------
+# file   CddFam_040_FlagsandFiles.gmk
+#
+# \brief Cdd make flags and files 
+#
+# ------------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+#  FLAGS - The result of this file is to add the CDD include files
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+
+C_INCLUDES_CDDSTP = $(PATH_SRC_CDD)/CddStp/Gen/8899                                      \
+                    $(PATH_SRC_CDD)/CddStp/Gen/88XX                                      \
+                    $(PATH_SRC_CDD)/CddStp/Gen/Dyn                                       \
+                    $(PATH_SRC_CDD)/CddStp/Gen                                           \
+                    $(PATH_SRC_CDD)/CddStp/Api                                           \
+                    $(PATH_SRC_CUST)/Cdd/CddStp/Cfg                                      \
+                    $(PATH_SRC_CUST)/Cdd/CddStp
+
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+#  FILES - The result of this file is to add the specific CDD source files
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+
+
+FILES_SRC_CDDSTP  = $(PATH_SRC_CDD)/CddStp/Gen/CddStp                                 \
+                    $(PATH_SRC_CDD)/CddStp/Gen/CddStp_Simulation                      \
+                    $(PATH_SRC_CDD)/CddStp/Gen/8899/CddStp8899                        \
+                    $(PATH_SRC_CDD)/CddStp/Gen/8899/CddStp8899_FctTables              \
+                    $(PATH_SRC_CDD)/CddStp/Gen/8899/CddStp8899_HalStp                 \
+                    $(PATH_SRC_CDD)/CddStp/Gen/8899/CddStp8899Com                     \
+                    $(PATH_SRC_CDD)/CddStp/Gen/8899/CddStp8899Temp                    \
+                    $(PATH_SRC_CDD)/CddStp/Gen/88XX/CddStp88XXVolt                    \
+                    $(PATH_SRC_CDD)/CddStp/Gen/Dyn/CddStpDyn                          \
+                    $(PATH_SRC_CDD)/CddStp/Gen/Dyn/CddStpDynBuf                       \
+                    $(PATH_SRC_CUST)/Cdd/CddStp/CddStp_Tsp                            \
+                    $(PATH_SRC_CUST)/Cdd/CddStp/CddStpPrj                             \
+                    $(PATH_SRC_CUST)/Cdd/CddStp/ctscCddStp_                           \
+                    $(PATH_SRC_CUST)/Cdd/CddStp/CddStpData
+
+include $(PATH_SRC_CDD)/CddStp/Make/$(TYP_FAMILY)/$(TYP_FAMILY)_$(TYP_DERIV)/CddDeriv_040_FlagsAndFiles.gmk

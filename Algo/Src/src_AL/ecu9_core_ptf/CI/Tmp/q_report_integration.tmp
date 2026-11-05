@@ -1,0 +1,5 @@
+.width 84 -7 -7 -7 -7 -7 -7 -7 -7 -7 -7 -7
+.headers on
+.mode column
+select filename, iif(misra_5="0", "-", misra_5) as misra, iif(his="0", "-", his) as his from v_q_results order by cast(misra_5 AS INT) desc;
+select "" as "", sum(misra_5) as "", sum(his) as "" from v_q_results;

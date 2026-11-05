@@ -1,0 +1,6 @@
+section,memory
+.bss,RAM
+.data,RAM
+.rodata,ROM
+.text,ROM
+.ARM,ROM

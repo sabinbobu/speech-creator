@@ -1,0 +1,23 @@
+ASM330LHH SPI callback flow
+==========================
+
+The Al077a IMU uses SPI sequence 1. Its sequence-end callback is configured in
+Src/config_AL/Al/Al077a/mcal/Spi_Cfg/src/Spi_PBcfg.c. The SBC remains on
+sequence 0 with its existing callback. SPI channels, jobs, sequence IDs, pins,
+and timing are unchanged.
+
+The CDD callback must remain short and run only in interrupt context. It reads
+the sequence result and latches completion status; it does not decode sensor
+data, start another transfer, or call application code. CddAsm330lhh_MainFunction
+consumes that completion in task context and advances the initialization,
+configuration, or sample-read state machine.
+
+Call CddAsm330lhh_MainFunction periodically from a task. Initialization and
+configuration APIs enqueue asynchronous work; E_OK means the request was
+accepted, not that the hardware operation has completed. Use
+CddAsm330lhh_GetInitStatus to observe initialization, and
+CddAsm330lhh_GetLatestSample to consume a completed sample.
+
+The asynchronous SPI start APIs do not wait for sequence completion. A failed
+start is retried by the periodic main function and eventually reported as an
+operation failure. Do not add a polling loop around Spi_GetSequenceResult.

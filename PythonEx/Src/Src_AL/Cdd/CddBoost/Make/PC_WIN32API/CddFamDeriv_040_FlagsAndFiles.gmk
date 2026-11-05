@@ -1,0 +1,9 @@
+C_INCLUDES_CDDBOOST = $(PATH_SRC_CDD)/CddBoost                                   \
+                      $(PATH_SRC_CDD)/CddBoost/Api                               \
+                      $(PATH_SRC_CDD)/CddBoost/Adapter                           \
+                      $(PATH_SRC_CDD)/CddBoost/Cfg                               \
+                      $(PATH_SRC_CDD)/CddBoost/Test
+
+
+FILES_SRC_CDDBOOST  = $(PATH_SRC_CDD)/CddBoost/Gen/CddBoost                        \
+                      $(PATH_SRC_CDD)/CddBoost/Adapter/CddBoost_Adapter

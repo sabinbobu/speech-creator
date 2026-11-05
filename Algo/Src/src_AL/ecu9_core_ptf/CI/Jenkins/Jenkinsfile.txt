@@ -1,0 +1,845 @@
+//----------------------------------------------------------------------------------------------------------------------------------------------------
+// Parameters
+//----------------------------------------------------------------------------------------------------------------------------------------------------
+// set start time for nightly build on master branch
+String cron_string = env.BRANCH_NAME == 'master' ? '0 19 * * *' : ''
+
+// agent specific parameters - tailor for Your project!
+def agentBuild = 'ITTOR47YBS08'
+def agentBuildPathToolsGeneric = 'D:\\ALGitRepo\\ToolsGeneric'
+def agentSmokeTest = 'RT HQGIF Smoke test agent'
+def agentSmokeTestPathToolsGeneric = 'C:\\ALGitRepo\\ToolsGeneric'
+def agentBuildLinux = 'itawsalipbs005-Linux'
+def dependencyPath = 'D:\\Artifacts'
+
+// project specific parameters - tailor for Your project!
+def artifactoryProjectName = 'ALGEN'
+def artifactoryBrowserUrl = 'https://artifactory.marelli.com/artifactory/webapp/#/artifacts/browse/tree/General'
+def projectRepoName = 'Cln1'
+def softwareLabelDefault = 'Z03_IN005_SWAP_XXXX.XXXX.XX'
+def swttnrDefault = '0000000000'
+def pathToCFGID = 'Src\\Src_AL\\Cust\\In\\In005\\App\\ALUnit\\CfgId'
+def remoteRepoUrl = 'https://hub.marelli.com/bitbucket/scm/algen/cln1.git'
+def remoteRepository = 'https://hub.marelli.com/bitbucket/scm/algen/cln1.git'
+def buildOutputBin = 'Z03In005_App_default'
+
+// assembled artifactory url
+def artifactoryBasePath = "${artifactoryProjectName}/${projectRepoName}/application"
+def artifactoryBrowserUrlProject = "${artifactoryBrowserUrl}/${artifactoryBasePath}"
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------
+// Function to stop older builds (of the same branch/PR) if a newer one is in the queue already
+// Source: https://issues.jenkins.io/browse/JENKINS-43353?focusedCommentId=376915&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-376915
+//----------------------------------------------------------------------------------------------------------------------------------------------------
+@NonCPS
+def cancelPreviousBuilds() {
+    // Check for other instances of this particular build, cancel any that are older than the current one
+    def jobName = env.JOB_NAME
+    def currentBuildNumber = env.BUILD_NUMBER.toInteger()
+    def currentJob = Jenkins.instance.getItemByFullName(jobName)
+
+    // Loop through all instances of this particular job/branch
+    for (def build : currentJob.builds) {
+            if (build.isBuilding() && (build.number.toInteger() < currentBuildNumber)) {
+                echo "Older build still queued. Sending kill signal to build number: ${build.number}"
+                build.doStop()
+        }
+    }
+}
+def verifyUnitTestWindows()
+{
+    def result = powershell(script: '''(Get-Content 'Build\\Bin\\W00In005_Test_Mt_ApplBenchmark\\W00In005_Test_Mt_ApplBenchmark_ExecutionResult.txt') -match 'number_of_failed_asserts' | ForEach-Object {
+    $value = ($_ -split '\\s+')[1];
+    if($value -eq '0') {
+    Write-Output 'true'
+    } else { Write-Output 'false'
+    }
+    }''', returnStdout: true).trim()
+    echo "Result : ${result}"
+    if (result == 'false') {
+     echo "Unit test failed .Terminating the pipeline."
+     error("Unit test failed")
+    } else {
+     echo "Unit test Passed."
+    }
+}
+
+def linuxBuild_andVerifyUT()
+{                                   
+    sh '''
+    echo "build/run one unit test"
+    echo
+    cd Build/VS
+    echo
+    ../Make/make.sh W00 PC_WIN32API UNIX_GCC CUnit GCOV X64 In005 Test Mt_ApplBenchmark NonKey rebuild
+    
+    '''
+    echo "verify unit test result"
+    def result = sh(returnStdout: true,script: '''
+            cat Build/Bin/W00In005_Test_Mt_ApplBenchmark/W00In005_Test_Mt_ApplBenchmark_ExecutionResult.txt \
+            | grep 'number_of_failed_asserts' | awk '{if ($2 == "0") print "true"; else print "false"}'
+        '''
+        ).trim()
+         if (result == 'false') {
+             echo "Unit test failed. Terminating the pipeline."
+             error("Unit test failed")
+         } else {
+             echo "Unit test passed..."
+         }
+    sh '''
+    echo " +++++ starting single file report generation ++++"
+    echo
+    cd ${WORKSPACE}/CI/Support
+    chmod +x ../../Build/VS/build.sh
+    chmod -R 777 ./      
+    ./00_integration.sh
+    '''
+}
+def deploytoArtifactory()
+{
+     echo "Deploy to Artifactory on Node: ${NODE_NAME}"
+     rtUpload (
+            serverId: 'artifactory-al-prod',
+            specPath: '${WORKSPACE}/CI/ArtifactorySpecs/integration-build-linux/1-AP-deploy-app-mt-it.txt'
+        )
+        script {
+            currentBuild.description = """<a href="${env._ARTIFACTORY_URL_BROWSER}" target="_blank" rel="noopener noreferrer">Link to Artifactory</a>"""
+        }
+}
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------
+// Pipeline itself
+//----------------------------------------------------------------------------------------------------------------------------------------------------
+pipeline {
+    agent none
+    options {
+        timestamps ()
+        skipDefaultCheckout()
+    }
+    triggers { cron(cron_string) }
+
+    stages {
+
+        stage('Init') {
+            agent { label 'master' }
+            steps {
+                script {
+                    cancelPreviousBuilds()
+                }
+            }
+        }
+
+        stage("Prepare Variables") {
+            agent { label 'master' }
+            steps{
+                echo "Prepare Variables"
+                echo "On Node: ${NODE_NAME}"
+
+                echo "Initially prepare build variables"
+                script {
+                    def tmpUserInput
+                    def userInputSWLabel = "NotSet"
+                    def userInputSWTTNR = "NotSet"
+
+                    // env._DATE
+                    def tmpTimestamp = env.BUILD_TIMESTAMP // BUILD_TIMESTAMP=2020-12-01 10:51:50 CET
+                    env._DATE = tmpTimestamp.substring(0,10)
+                    echo "env._DATE: ${_DATE}"
+
+                    // env._BUILDNO
+                    def tmpBuildNo = env.BUILD_NUMBER
+                    env._BUILDNO = tmpBuildNo.padLeft(8, '0')
+                    echo "env._BUILDNO: ${_BUILDNO}"
+
+                    // env._PROJ_REPO_BRANCHNAME
+                    env._PROJ_REPO_BRANCHNAME = env.BRANCH_NAME
+                    echo "env._PROJ_REPO_BRANCHNAME: ${_PROJ_REPO_BRANCHNAME}"
+                    env._PROJ_REPO_BRANCHNAME_NO_SLASH = env._PROJ_REPO_BRANCHNAME.replaceAll( '/', '-' )
+                    echo "_PROJ_REPO_BRANCHNAME_NO_SLASH: ${_PROJ_REPO_BRANCHNAME_NO_SLASH}"
+
+                    // env._PLANNAME, env._USERINPUTSWLABEL, env._USERINPUTSWTTNR
+                    env._PLANNAME = 'NotSet'
+                    env._USERINPUTSWLABEL = 'NotSet'
+                    env._USERINPUTSWTTNR = 'NotSet'
+                    env._BUILDOUTPUTBIN = "${buildOutputBin}"
+
+                    // nightly-build
+                    if (env.BRANCH_NAME == 'master')
+                    {
+                        env._PLANNAME = 'nightly-build'
+
+                        env._ARTIFACTORY_URL = "${artifactoryBasePath}/${_PLANNAME}/${BRANCH_NAME}/${_DATE}-${_BUILDNO}"
+                        env._ARTIFACTORY_URL_LATEST = "${artifactoryBasePath}/${_PLANNAME}/${BRANCH_NAME}/0000-00-00-latest"
+                        env._ARTIFACTORY_URL_BROWSER = "${artifactoryBrowserUrlProject}/${_PLANNAME}/${BRANCH_NAME}/${_DATE}-${_BUILDNO}"
+                    }
+
+                    // integration-build
+                    if (env.BRANCH_NAME ==~ /PR-.*/ || env.BRANCH_NAME ==~ /feature.*/ || env.BRANCH_NAME ==~ /bugfix.*/)
+                    {
+                        env._PLANNAME = 'integration-build'
+
+                        env._ARTIFACTORY_URL = "${artifactoryBasePath}/${_PLANNAME}/${BRANCH_NAME}/${_DATE}-${_BUILDNO}"
+                        env._ARTIFACTORY_URL_BROWSER = "${artifactoryBrowserUrlProject}/${_PLANNAME}/${BRANCH_NAME}/${_DATE}-${_BUILDNO}"
+                    }
+
+                    // release-candidate-build
+                    if (env.BRANCH_NAME ==~ /release.*/)
+                    {
+                        env._PLANNAME = 'release-candidate-build'
+
+                        // Read input label
+                        def userInput
+                        timeout(time: 30, unit: "MINUTES") {
+                            tmpUserInput = input(id: 'userInput', message: 'SW logistic data:', parameters: [
+                                    [$class: 'TextParameterDefinition', defaultValue: '${softwareLabelDefault}', description: 'SWLabel', name: 'swlabel'],
+                                    [$class: 'TextParameterDefinition', defaultValue: '${swttnrDefault}', description: 'SWTTNR', name: 'swttnr']
+                                ])
+                        }
+                        env._USERINPUTSWLABEL = tmpUserInput['swlabel']
+                        env._USERINPUTSWTTNR = tmpUserInput['swttnr']
+                        echo ("userInputSWLabel: "+env._USERINPUTSWLABEL)
+                        echo ("userInputSWTTNR: "+env._USERINPUTSWTTNR)
+
+                        env._ARTIFACTORY_URL = "${artifactoryBasePath}/${_PLANNAME}/${_DATE}-${_USERINPUTSWLABEL}"
+                        env._ARTIFACTORY_URL_BROWSER = "${artifactoryBrowserUrlProject}/${_PLANNAME}/${_DATE}-${_USERINPUTSWLABEL}"
+                    }
+                    echo "env._PLANNAME: ${_PLANNAME}"
+
+                    // env._ARTIFACTORY_URL, env._ARTIFACTORY_URL_BROWSER
+                    echo "env._BUILDOUTPUTBIN: ${env._BUILDOUTPUTBIN}"
+                    echo "env._ARTIFACTORY_URL: ${env._ARTIFACTORY_URL}"
+                    echo "env._ARTIFACTORY_URL_LATEST: ${env._ARTIFACTORY_URL_LATEST}"
+                    echo "env._ARTIFACTORY_URL_BROWSER: ${env._ARTIFACTORY_URL_BROWSER}"
+                }
+            }
+        }
+
+        stage('Pull ToolsGeneric') {
+            agent {label "${agentBuild}"}
+            steps {
+                lock("${NODE_NAME}LockToolsGenericPull") {
+                    echo 'Pull ToolsGeneric'
+                    echo "On Node: ${NODE_NAME}"
+
+                    bat """
+                    cd ${agentBuildPathToolsGeneric}
+                    git pull
+                    """
+                }
+            }
+        }
+
+        stage('Checkout project repository') {
+            parallel {
+
+                stage('Checkout project repo on Windows (default)') {
+                    agent {label "${agentBuild}"}
+                    steps {
+                        checkout([
+                            $class: 'GitSCM',
+                            branches: scm.branches,
+                            extensions: scm.extensions + [[$class: 'GitLFSPull'],
+                                                            [$class: 'CheckoutOption', timeout: 45],
+                                                            [$class: 'CloneOption', timeout: 45, noTags: false, reference: 'D:/ALGitRepoMirror/cln1.git', shallow: false],
+                                                            [$class: 'SubmoduleOption', disableSubmodules: false, parentCredentials: true, recursiveSubmodules: true, reference: '', timeout: 45, trackingSubmodules: false]],
+                            userRemoteConfigs: scm.userRemoteConfigs
+                        ])
+                    }
+                }
+
+                stage('Checkout project repo on Linux') {
+                    agent {label "${agentBuildLinux}"}
+                    steps {
+                        checkout([
+                            $class: 'GitSCM',
+                            branches: scm.branches,
+                            extensions: scm.extensions + [[$class: 'GitLFSPull'],
+                                                            [$class: 'CheckoutOption', timeout: 45],
+                                                            [$class: 'CloneOption', timeout: 45, noTags: false, shallow: false],
+                                                            [$class: 'SubmoduleOption', disableSubmodules: false, parentCredentials: true, recursiveSubmodules: true, reference: '', timeout: 45, trackingSubmodules: false]],
+                            userRemoteConfigs: scm.userRemoteConfigs
+                        ])
+                    }
+                }
+            }
+        }
+
+        stage('Execution control') {
+            agent {label "${agentBuild}"}
+            steps {
+                script {
+
+                    // initially don't skip any stages
+                    env.SKIP_REMAINING_STAGES = 'false'
+
+                    // Get the current change log from SCM
+                    def changeLogsSet = currentBuild.changeSets
+
+                    // Get previous build instance
+                    def previousBuild = currentBuild.previousBuild
+
+                    // previous build failed status
+                    def isPreviousBuildFailed = previousBuild != null && previousBuild.result == 'FAILURE'
+                    
+                    // is build triggered by timer
+                    isTriggeredByTimer = !currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').isEmpty()
+
+                    // if previous build failed continue this build
+                    if(isPreviousBuildFailed) {
+                        echo "Execution control: Prevous build state is: ${previousBuild.result}"
+                        echo "Execution control: Previous build ${previousBuild.result} for some reason. Build execution continued"
+                    } 
+                    // if previous build not failed and no change in software abort the build
+                    else if((changeLogsSet.isEmpty()) && (env._PLANNAME == 'nightly-build')) {
+                        if(isTriggeredByTimer) {
+                            echo 'Execution control: No changes found in the software. Build execution aborted'
+                            env.SKIP_REMAINING_STAGES = 'true'
+                            currentBuild.result = 'ABORTED'
+                        } else {
+                            echo 'Execution control: Build Not triggered by timer, Execution continued'
+                        }
+                    } 
+                    // Build is continued
+                    else {
+                        echo 'Execution control: Build execution continued'
+                    }
+                }
+            }
+        }
+
+        stage('Delete user settings') {
+            agent {label "${agentBuild}"}
+            when {
+                expression {env.SKIP_REMAINING_STAGES != 'true'}
+            }
+            steps {
+                echo 'Delete user settings!'
+                echo "On Node: ${NODE_NAME}"
+
+                bat """
+                echo Actual working directory:
+                cd
+
+                del Build\\Make\\Make_005_UserSettings.gmk
+                """
+            }
+        }
+
+        stage('Create BuildInfo.txt file') {
+            agent {label "${agentBuild}"}
+            when {
+                expression {env.SKIP_REMAINING_STAGES != 'true'}
+            }
+            steps {
+                echo 'Create BuildInfo.txt file!'
+                echo "On Node: ${NODE_NAME}"
+
+                bat """
+                echo Actual working directory:
+                cd
+
+                REM Saved in BuildInfo.txt
+
+                SET PROJECTBranchName = NotSet
+                SET PROJECTCommitHash = NotSet
+
+                SET ToolsGenericBranchName = NotSet
+                SET ToolsGenericCommitHash = NotSet
+
+                REM get PROJECT repository information
+                git symbolic-ref -q --short HEAD > temp.txt
+                set /p PROJECTBranchName=<temp.txt
+                git rev-parse HEAD > temp.txt
+                set /p PROJECTCommitHash=<temp.txt
+                del temp.txt
+
+                REM get ToolsGeneric repository information
+                cd ${agentBuildPathToolsGeneric}
+                git symbolic-ref -q --short HEAD > temp.txt
+                set /p ToolsGenericBranchName=<temp.txt
+                git rev-parse HEAD > temp.txt
+                set /p ToolsGenericCommitHash=<temp.txt
+                del temp.txt
+                cd ${env.WORKSPACE}
+
+                REM Write content to file
+                (
+                echo This file incudes information about this specific Build
+                echo.
+                echo Repository information: PROJECT
+                echo BranchName: %PROJECTBranchName%
+                echo Commit Hash: %PROJECTCommitHash%
+                echo.
+                echo Repository information: ToolsGeneric
+                echo BranchName: %ToolsGenericBranchName%
+                echo Commit Hash: %ToolsGenericCommitHash%
+                echo Build Type: ${_PLANNAME}
+                echo.
+                )> BuildInfo.txt
+                """
+            }
+        }
+
+        stage('integration-build') {
+            when {
+                expression {env.SKIP_REMAINING_STAGES != 'true'}
+            }
+            parallel {
+                stage ('integration-build on Linux') {
+                    agent {label "${agentBuildLinux}"}
+                    when {
+                        expression {env._PLANNAME == 'integration-build'}
+                    }
+                    steps {
+                        linuxBuild_andVerifyUT()
+                    }
+                     post {
+                       always
+                        {
+                           deploytoArtifactory()
+                        }
+                  }
+                }
+
+                stage ('integration-build on Windows (default)') {
+                    agent {label "${agentBuild}"}
+                    when {
+                        expression {env._PLANNAME == 'integration-build'}
+                    }
+                    steps {
+
+                        bat """
+                        cd ${env.WORKSPACE}\\CI\\Support
+
+                        set PATH_TOOLSGENERIC=${agentBuildPathToolsGeneric}
+                        set PROJECTNAME_AXIVION=CLN1-${env._PROJ_REPO_BRANCHNAME_NO_SLASH}
+                        call 00_integration.bat
+                        """
+                        verifyUnitTestWindows()
+
+                        bat """
+                        echo ErrorLevel: %ERRORLEVEL%
+
+                        if %ERRORLEVEL% EQU 0 (
+                        echo 00_integration.bat Success, ErrorLevel is: %ERRORLEVEL%
+                        ) else (
+                        echo 00_integration.bat Failure, ErrorLevel is: %ERRORLEVEL%
+                        exit /b %errorlevel%
+                        )
+                        """
+                    }
+                    post {
+                        always {
+                            echo "Deploy to Artifactory on Node: ${NODE_NAME}"
+                            rtUpload (
+                                serverId: 'artifactory-al-prod',
+                                specPath: '${WORKSPACE}/CI/ArtifactorySpecs/integration-build/1-AP-deploy-app-mt-it.txt'
+                            )
+                            script {
+                                currentBuild.description = """<a href="${env._ARTIFACTORY_URL_BROWSER}" target="_blank" rel="noopener noreferrer">Link to Artifactory</a>"""
+                            }
+
+                            echo '30_eval_app_build.bat'
+                            bat """
+                            cd ${env.WORKSPACE}\\CI\\Support
+
+                            set PATH_TOOLSGENERIC=${agentBuildPathToolsGeneric}
+                            call 30_eval_app_build.bat
+
+                            echo ErrorLevel: %ERRORLEVEL%
+
+                            if %ERRORLEVEL% EQU 0 (
+                            echo 30_eval_app_build.bat Success, ErrorLevel is: %ERRORLEVEL%
+                            exit /b %ERRORLEVEL%
+                            ) else (
+                            echo 30_eval_app_build.bat Failure, ErrorLevel is: %ERRORLEVEL%
+                            exit /b %ERRORLEVEL%
+                            )
+                            """
+                        }
+                    }
+                }
+            }
+        }
+        stage('nightly-build') {
+            when {
+                expression {env.SKIP_REMAINING_STAGES != 'true'}
+            }
+            parallel {
+                stage ('nightly-build on Linux') {
+                    agent {label "${agentBuildLinux}"}
+                    when {
+                        expression {env._PLANNAME == 'nightly-build'}
+                    }
+                    steps {
+                       linuxBuild_andVerifyUT()
+                    }
+                    post {
+                       always
+                        {
+                           deploytoArtifactory()
+                        }
+                  }
+                }
+                stage('nightly-build on Windows (default)') {
+                    agent {label "${agentBuild}"}
+                    when {
+                        expression {env._PLANNAME == 'nightly-build'}
+                    }
+                    steps {
+
+                        /*script {
+                            def repoSwLabel = bat returnStdout: true, script: """
+                            @echo off
+
+                            git status
+                            git stash
+
+                            git checkout ${env.BRANCH_NAME}
+
+                            git stash apply
+                            git status
+
+                            git config --list
+                            git remote add central ${remoteRepoUrl}
+
+                            echo "Increment BuildNo"
+
+                            REM Increment BuildNo
+                            cd Src\\Src_AL\\Cust\\Ne\\Ne012\\App\\ALUnit\\CfgId
+                            set /p tmpSWLabel=<CfgId_CfgInfoVersion.txt.h
+                            echo tmpSWLabel raw: %tmpSWLabel%
+                            set tmpSWLabel=%tmpSWLabel:~1,27%
+                            echo tmpSWLabel: %tmpSWLabel%
+
+                            REM :~start,length
+                            set tmpBuildNo=%tmpSWLabel:~16,4%
+                            echo tmpBuildNo: %tmpBuildNo%
+
+                            REM remove 1st "0" if there
+                            if %tmpBuildNo:~0,1% == 0 (set tmpBuildNo=%tmpBuildNo:~1,3%)
+                            REM remove 2nd "0" if there
+                            if %tmpBuildNo:~0,1% == 0 (set tmpBuildNo=%tmpBuildNo:~1,2%)
+                            REM remove 3rd "0" if there
+                            if %tmpBuildNo:~0,1% == 0 (set tmpBuildNo=%tmpBuildNo:~1,1%)
+
+                            REM inc tmpBuildNo
+                            echo tmpBuildNo cut: %tmpBuildNo%
+                            set /A tmpBuildNo=%tmpBuildNo%+1
+                            echo tmpBuildNo inc: %tmpBuildNo%
+
+                            REM Add 0 if value is smaller than 
+                            IF %tmpBuildNo% LSS 10 (set tmpBuildNo=0%tmpBuildNo%)
+                            IF %tmpBuildNo% LSS 100 (set tmpBuildNo=0%tmpBuildNo%)
+                            IF %tmpBuildNo% LSS 1000 (set tmpBuildNo=0%tmpBuildNo%)
+                            echo tmpBuildNo inc full: %tmpBuildNo%
+
+                            set tmpSWLabel=%tmpSWLabel:~0,16%%tmpBuildNo%%tmpSWLabel:~20,3%
+                            echo tmpSWLabel inc: %tmpSWLabel%
+
+                            echo "%tmpSWLabel%" > CFGID_CfgInfoVersion.txt.h
+                            cd ..\\..\\..\\..\\..\\..\\..\\..
+
+                            REM set remote
+                            git remote add central ${remoteRepoUrl}
+
+                            REM set configurations
+                            git config --global user.email ""
+                            git config --global user.name "Jenkins Agent"
+
+                            git fetch central
+                            
+                            REM Update Nightly Build Information
+                            git log --pretty=format:"%%ci %%H %%d" | findstr NE012 > nightly-build-list.txt
+                            
+                            REM commit and push to the Bitbucket server
+                            git commit -m "NIOLHD-577 Nightly build update" Src\\Src_AL\\Cust\\Ne\\Ne012\\App\\ALUnit\\CfgId\\CfgId_CfgInfoVersion.txt.h nightly-build-list.txt
+                            git push central master
+
+                            git tag -a %tmpSWLabel% -m "Created by Jenkins"
+                            git push central --tags
+
+                            git status
+
+                            echo %tmpSWLabel%
+                            """
+
+                            repoSwLabel = repoSwLabel.split().last()    // get the last echo line from previous batch execution (SWLabel written in the file)
+                            env._REPOSWLABEL = repoSwLabel
+                            echo ("repoSwLabel: "+env._REPOSWLABEL)
+
+                            env._ARTIFACTORY_URL = "${artifactoryBasePath}/${_PLANNAME}/${BRANCH_NAME}/${_DATE}-${env._REPOSWLABEL}"
+                            env._ARTIFACTORY_URL_BROWSER = "${artifactoryBrowserUrlProject}/${_PLANNAME}/${BRANCH_NAME}/${_DATE}-${env._REPOSWLABEL}"
+
+                            echo "env._ARTIFACTORY_URL: ${env._ARTIFACTORY_URL}"
+                            echo "env._ARTIFACTORY_URL_BROWSER: ${env._ARTIFACTORY_URL_BROWSER}"
+
+                            bat """
+                            REM make SWLabelInfo available for Artifactory upload
+                            cd ${env.WORKSPACE}
+                            echo "${env._REPOSWLABEL}" > CFGID_CfgInfoVersion.txt.h
+                            """
+                        }*/
+
+                        bat """
+                        cd ${env.WORKSPACE}\\CI\\Support
+
+                        set PATH_TOOLSGENERIC=${agentBuildPathToolsGeneric}
+                        set PROJECTNAME_AXIVION=CLN1-${env._PROJ_REPO_BRANCHNAME_NO_SLASH}
+                        call 00_nightly.bat
+                        """
+                        verifyUnitTestWindows()
+
+                        bat """
+                        echo ErrorLevel: %ERRORLEVEL%
+
+                        if %ERRORLEVEL% EQU 0 (
+                        echo 00_nightly.bat Success, ErrorLevel is: %ERRORLEVEL%
+                        ) else (
+                        echo 00_nightly.bat Failure, ErrorLevel is: %ERRORLEVEL%
+                        exit /b %errorlevel%
+                        )
+                        """
+                    }
+                    post {
+                        always {
+                            echo "Deploy to Artifactory on Node: ${NODE_NAME}"
+                            rtUpload (
+                                serverId: 'artifactory-al-prod',
+                                specPath: '${WORKSPACE}/CI/ArtifactorySpecs/nightly-build/1-AP-deploy-app-mt-it.txt'
+                            )
+                            script {
+                                currentBuild.description = """<a href="${env._ARTIFACTORY_URL_BROWSER}" target="_blank" rel="noopener noreferrer">Link to Artifactory</a>"""
+                            }
+                            rtUpload (
+                                serverId: 'artifactory-al-prod',
+                                specPath: '${WORKSPACE}/CI/ArtifactorySpecs/nightly-build/1-AP-deploy-app-mt-it-latest.txt'
+                            )
+
+                            echo '30_eval_app_build.bat'
+                            bat """
+                            cd ${env.WORKSPACE}\\CI\\Support
+
+                            set PATH_TOOLSGENERIC=${agentBuildPathToolsGeneric}
+                            call 30_eval_app_build.bat
+
+                            echo ErrorLevel: %ERRORLEVEL%
+
+                            if %ERRORLEVEL% EQU 0 (
+                            echo 30_eval_app_build.bat Success, ErrorLevel is: %ERRORLEVEL%
+                            exit /b %ERRORLEVEL%
+                            ) else (
+                            echo 30_eval_app_build.bat Failure, ErrorLevel is: %ERRORLEVEL%
+                            exit /b %ERRORLEVEL%
+                            )
+                            """
+                        }
+                    }
+
+                }
+            }
+            
+        }
+        stage('release-candidate-build') {
+            when {
+                expression {env.SKIP_REMAINING_STAGES != 'true'}
+            }
+            parallel {
+                stage ('release-candidate-build on Linux') {
+                    agent {label "${agentBuildLinux}"}
+                    when {
+                        expression {env._PLANNAME == 'release-candidate-build'}
+                    }
+                    steps {
+                        linuxBuild_andVerifyUT()
+                    }
+                    post {
+                       always
+                        {
+                           deploytoArtifactory()
+                        }
+                  }
+                }
+                stage ('release-candidate-build on Windows (default)') {
+                    agent {label "${agentBuild}"}
+                    when {
+                        expression {env._PLANNAME == 'release-candidate-build'}
+                    }
+                    steps {
+                        bat """
+                        git status
+                        git stash
+
+                        git checkout ${env.BRANCH_NAME}
+
+                        git stash apply
+                        git status
+
+                        git config --list
+
+                        git remote add central ${remoteRepoUrl}
+
+                        echo set configurations
+                        git config --global user.email ""
+                        git config --global user.name "Jenkins Agent"
+
+                        git fetch central
+
+                        echo create and push tag
+                        git tag -a ${env._USERINPUTSWLABEL} -m "Created by Jenkins Agent"
+                        git push central --tags
+
+                        git status
+                        """
+
+                        bat """
+                        REM Tailor: adapt path to CfgId folder of Your project
+                        cd ${pathToCFGID}
+                        echo "${env._USERINPUTSWLABEL}" > CFGID_CfgInfoVersion.txt.h
+                        echo "${env._USERINPUTSWTTNR}" > CfgId_CfgInfoPartNo.txt.h
+                        """
+
+                        bat """
+                        cd CI\\Support
+
+                        set PATH_TOOLSGENERIC=${agentBuildPathToolsGeneric}
+                        set PROJECTNAME_AXIVION=CLN1-${env._PROJ_REPO_BRANCHNAME_NO_SLASH}
+                        call 00_release_candidate.bat
+                        """
+                        verifyUnitTestWindows()
+
+                        bat """
+                        echo ErrorLevel: %ERRORLEVEL%
+
+                        if %ERRORLEVEL% EQU 0 (
+                        echo 00_release_candidate.bat Success, ErrorLevel is: %ERRORLEVEL%
+                        ) else (
+                        echo 00_release_candidate.bat Failure, ErrorLevel is: %ERRORLEVEL%
+                        exit /b %errorlevel%
+                        )
+                        """
+                    }
+                    post {
+                        always {
+                            echo "Deploy to Artifactory on Node: ${NODE_NAME}"
+                            rtUpload (
+                                serverId: 'artifactory-al-prod',
+                                specPath: '${WORKSPACE}/CI/ArtifactorySpecs/release-candidate-build/1-AP-deploy-app-mt-it.txt'
+                            )
+                            script {
+                                currentBuild.description = """<a href="${env._ARTIFACTORY_URL_BROWSER}" target="_blank" rel="noopener noreferrer">Link to Artifactory</a><br/>${env._USERINPUTSWLABEL} ${env._USERINPUTSWTTNR}"""
+                            }
+
+                            echo '30_eval_app_build.bat'
+                            bat """
+                            cd  ${env.WORKSPACE}\\CI\\Support
+
+                            set PATH_TOOLSGENERIC=${agentBuildPathToolsGeneric}
+                            call 30_eval_app_build.bat
+
+                            echo ErrorLevel: %ERRORLEVEL%
+
+                            if %ERRORLEVEL% EQU 0 (
+                            echo 30_eval_app_build.bat Success, ErrorLevel is: %ERRORLEVEL%
+                            exit /b %ERRORLEVEL%
+                            ) else (
+                            echo 30_eval_app_build.bat Failure, ErrorLevel is: %ERRORLEVEL%
+                            exit /b %ERRORLEVEL%
+                            )
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    
+        /*stage('smoke test') {
+        agent {label "${agentSmokeTest}"}
+        when {
+                allOf {
+                    expression {env.SKIP_REMAINING_STAGES != 'true'}
+                    expression {env._PLANNAME == 'integration-build' || env._PLANNAME == 'nightly-build' || env._PLANNAME == 'release-candidate-build'}
+                }
+            }
+        steps {
+             checkout([
+                 $class: 'GitSCM',
+                 branches: scm.branches,
+                 extensions: scm.extensions + [[$class: 'GitLFSPull'], [$class: 'CloneOption', noTags: false, reference: 'C:/ALGitRepoMirror/niolhd.git', shallow: false]],
+                 userRemoteConfigs: scm.userRemoteConfigs
+             ])
+
+
+             echo "smoke test running on: ${NODE_NAME}"
+
+             echo "Resolve from Artifactory on Node: ${NODE_NAME}"
+            rtDownload (
+                 serverId: 'artifactory-al-prod',
+                specPath: "${WORKSPACE}/CI/ArtifactorySpecs/${env._PLANNAME}/2-AP-resolve-smoke-test.txt"
+             )
+             sleep 5
+
+             bat """
+             echo Content of ArtifactoryDownloads folder:
+             cd ArtifactoryDownloads\\${env.__BUILDOUTPUTBIN}
+             dir
+             """
+
+             lock("${NODE_NAME}LockSmokeTest") {
+
+                //  bat """
+                //  echo Create file with link to the downloaded files from Artifactory
+                //  echo|set /P="${WORKSPACE}\\ArtifactoryDownloads\\${env._BUILDOUTPUTBIN}">C:\\EXAM\\hexfile.txt
+                //  exit 0
+                //  """
+
+                 echo "Run Smoke Test"
+                 bat """
+                 cd CI\\SmokeTest\\EXAM
+                 call build-plan-simulation.bat
+                 """
+             }             
+         }*/
+//         post {
+//                always {
+//                    echo "Deploy to Artifactory on Node: ${NODE_NAME}"
+//                    rtUpload (
+//                        serverId: 'artifactory-al-prod',
+//                        specPath: "${WORKSPACE}/CI/ArtifactorySpecs/${env._PLANNAME}/3-AP-deploy-smoke-test.txt"
+//                    )
+//                    junit '**/reports/junit-test-report.xml'
+//                    cleanWs()
+//                }
+//            }
+//       }
+    }
+
+    post {
+        always {
+            node( "${agentBuild}" ) {
+                echo 'One way or another, execution has finished'
+                cleanWs()
+
+                emailext (
+                    body: """<p>Build status: ${currentBuild.result}.</p><br><p>Jenkins build output: <a href=${env.BUILD_URL}>${env.JOB_NAME} ${env._PLANNAME}#${env.BUILD_NUMBER}</a></p><br>Link to Artifactory: <a href="${env._ARTIFACTORY_URL_BROWSER}" target="_blank" rel="noopener noreferrer">${env._ARTIFACTORY_URL_BROWSER}</a>""",
+                    mimeType: "text/html",
+                    to: "mark.strecker@marelli.com, ${env.CHANGE_AUTHOR_EMAIL}",
+                    subject: "ALJenkins: ${env.JOB_NAME} - ${env._PLANNAME} - #${env.BUILD_NUMBER} - ${currentBuild.result}"
+                )
+            }
+
+        }
+        success {
+            echo 'I succeeded!'
+        }
+        unstable {
+            echo 'I am unstable :/'
+        }
+        failure {
+            echo 'I failed :('
+        }
+        changed {
+            echo 'Things were different before...'
+        }
+    }
+}

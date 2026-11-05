@@ -1,0 +1,135 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "selectedBuildConfig",
+      "type": "pickString",
+      "description": "Select Build Configuration",
+      "options": [
+        "Al077 H00 Proto App",
+        "Al077 H00 Proto App AXIVION",
+        "Al077 W00 Proto Mt_ApplBenchmark",
+      ],
+      "default": "Al077 H00 Proto App"
+    }
+  ],
+  "tasks": [
+   {
+      "label": "Rebuild",
+      "type": "shell",
+      "windows": {
+         "command": "${workspaceFolder}\\Build\\VS\\runBuildSelector.bat"
+      },
+      "linux": {
+         "command": "${workspaceFolder}/Build/VS/runBuildSelector.sh"
+      },
+      "args": [
+         "${input:selectedBuildConfig}"
+      ],
+      "options": {
+         "shell": {
+            "executable": "cmd.exe",
+            "args": [
+               "/c"
+            ]
+         }
+      },
+      "group": {
+         "kind": "build",
+         "isDefault": true
+      },
+      "presentation": {
+         "reveal": "always",
+         "panel": "dedicated",
+         "clear": true,
+         "echo": false,
+         "focus": false
+      }
+   },
+   {
+      "label": "Al077 H00 Proto App",
+      "type": "shell",
+      "command": "..\\Build.bat",
+      "args": [
+         "H00",
+         "MSPM0G_3519",
+         "ARM_KEIL",
+         "CUnit",
+         "GCOV",
+         "M0P",
+         "Al077",
+         "App",
+         "default",
+         "NonKey",
+         "rebuild"
+      ],
+      "options": {
+         "cwd": "${workspaceFolder}\\Build\\VS"
+      },
+      "presentation": {
+         "reveal": "always",
+         "panel": "dedicated",
+         "clear": true,
+         "echo": false,
+         "focus": false
+      },
+      "problemMatcher": []
+   },
+   {
+      "label": "Bw018 F05 App AXIVION",
+      "type": "shell",
+      "command": "..\\Build.bat",
+      "args": [
+         "H00",
+         "MSPM0G_3519",
+         "ARM_AXN",
+         "CUnit",
+         "GCOV",
+         "M0P",
+         "Al077",
+         "App",
+         "AXIVION",
+         "NonKey",
+         "rebuild"
+      ],
+      "options": {
+         "cwd": "${workspaceFolder}\\Build\\VS"
+      },
+      "presentation": {
+         "reveal": "always",
+         "panel": "dedicated",
+         "clear": true,
+         "echo": false,
+         "focus": false
+      }
+   },
+   {
+      "label": "Bw018 W00 Mt_ALUtil",
+      "type": "shell",
+      "command": "..\\Build.bat",
+      "args": [
+         "W00",
+         "PC_WIN32API",
+         "WIN_GCC",
+         "CUnit",
+         "GCOV",
+         "X64",
+         "Al077",
+         "Test",
+         "Mt_ApplBenchmark",
+         "NonKey",
+         "rebuild"
+      ],
+      "options": {
+         "cwd": "${workspaceFolder}\\Build\\VS"
+      },
+      "presentation": {
+         "reveal": "always",
+         "panel": "dedicated",
+         "clear": true,
+         "echo": false,
+         "focus": false
+      }
+   }
+]
+}

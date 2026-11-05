@@ -1,0 +1,16 @@
+{
+  "files": [
+	{
+	  "pattern": "${WORKSPACE}\BuildInfo.txt",
+	  "target": "${_ARTIFACTORY_URL_LATEST}/"
+	},
+	{
+	  "pattern": "${WORKSPACE}\Build\Bin\${_BUILDOUTPUTBIN}\**",
+	  "target": "${_ARTIFACTORY_URL_LATEST}/${_BUILDOUTPUTBIN}/"
+	},
+	{
+	  "pattern": "${WORKSPACE}\CI\TestResults**",
+	  "target": "${_ARTIFACTORY_URL_LATEST}/TestResults/"
+	}
+]
+}

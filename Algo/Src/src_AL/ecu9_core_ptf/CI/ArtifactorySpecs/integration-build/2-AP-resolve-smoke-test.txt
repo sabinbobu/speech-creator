@@ -1,0 +1,11 @@
+{
+	"files":
+	[
+		{
+			"pattern": "${_ARTIFACTORY_URL}/${_BUILDOUTPUTBIN}/",
+			"target": "${WORKSPACE}\ArtifactoryDownloads\${_BUILDOUTPUTBIN}\",
+			"recursive": "false",
+			"flat": "true"
+		}
+	]
+}

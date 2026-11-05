@@ -1,0 +1,2 @@
+eclipse.preferences.version=1
+org.eclipse.core.variables.valueVariables=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?>\r\n<valueVariables>\r\n<valueVariable description\="" name\="mcal_config_path" readOnly\="false" value\="${workspace}\\..\\..\\..\\..\\Src\\config_AL\\Al\\Al077\\mcal"/>\r\n</valueVariables>\r\n

@@ -1,0 +1,99 @@
+REM %PATH_TOOLSGENERIC% is a variable which can be set from outside (e.g. in Windows or in a Jenkinsfile)
+REM %TOOLSGENERIC_PATH% is a variable used internally in the CI\Support scripts
+REM if %PATH_TOOLSGENERIC% is not set, use default "..\..\..\toolsgeneric"
+SET TOOLSGENERIC_PATH=%PATH_TOOLSGENERIC%
+if "%PATH_TOOLSGENERIC%X"=="X" set TOOLSGENERIC_PATH=..\..\..\toolsgeneric
+
+if "%CONFIGURATION%"=="" (
+  SET CONFIGURATION=DEFAULT
+)
+
+SET DB=..\db\nightly.sqlite3
+SET DB_TOOL=%TOOLSGENERIC_PATH%\Utilities\CommonDomain\sqlite\sqlite3.exe
+SET TEST_RESULT_PARSER_TOOL=%TOOLSGENERIC_PATH%\Utilities\AL\ALTestResult\v1.81\ALTestResult.exe
+SET GIT=git
+SET PYTHON=%TOOLSGENERIC_PATH%\Utilities\CommonDomain\python\python27\python.exe
+SET PYTHON3=%TOOLSGENERIC_PATH%\Utilities\CommonDomain\python\python383\python.exe
+set WC=%TOOLSGENERIC_PATH%\Utilities\CommonDomain\wc\wc.exe
+
+rem TAILOR
+SET OPTION_USE_DB_MAINTENANCE=1
+SET OPTION_USE_BUILD_APP=1
+SET OPTION_USE_WARNING_PARSER=1
+SET OPTION_USE_SIZE_ANALYSIS=1
+SET OPTION_USE_MAP_ANALYSIS=1
+SET OPTION_USE_QAC=0
+SET OPTION_USE_QAC_HTML=0
+SET OPTION_USE_AXIVION=1
+SET OPTION_USE_UNITTEST=1
+SET OPTION_USE_UNITTEST_CHECKER=1
+SET OPTION_USE_INTEGRATIONTEST=1
+SET OPTION_USE_REPORT=1
+SET OPTION_USE_REPORT_SANITYCHECK=1
+SET OPTION_USE_REPORT_CODESTYLECHECK=1
+SET OPTION_USE_DOORS_EXPORT=1
+SET OPTION_USE_LINE_COUNT=1
+
+SET CONFIG_USE_MPU=0
+
+REM Available options: Warning, Warning_KEIL, Warning_Tricore
+SET WARNING_PARSER_TYPE=Warning
+
+REM Available options: Map, Map_KEIL, Map_TricoreTasking
+SET MAP_PARSER_TYPE=Map
+
+SET PAR_ECU=Z03
+SET PAR_MCAL=STM32_F4
+SET PAR_CC=ARM_GCC
+SET PAR_TEST=CUnit
+SET PAR_COVER=GCOV
+SET PAR_CORE=M4F
+SET PAR_PRJ=In005
+SET PAR_VAR=App
+SET PAR_BUILD=default
+SET PAR_KEY=NonKey
+
+if %CONFIGURATION%==RELEASE (
+  SET PAR_RULE=rebuild_delivery
+) else (
+  SET PAR_RULE=rebuild
+)
+
+SET PAR_ECU_UT=W00
+
+SET MAX_ROM=65536
+SET MAX_RAM=16384
+SET PLATFORM_NAME=In005
+SET PLATFORM_HUMAN_NAME=Clean-1 reference project
+SET MAIN_APP_NAME=%PAR_ECU%%PAR_PRJ%_%PAR_VAR%_%PAR_BUILD%
+SET MAIN_APP_PACKAGE_NAME=
+SET BUILD_BIN_PATH=..\..\Build\Bin
+SET ERROR_LIST_PATH=..\..\Build\Tmp\%MAIN_APP_NAME%\err
+SET TMP_QAC_PATH=..\..\Build\Tmp\%MAIN_APP_NAME%\qac
+SET REPORT_PATH=..\TestResults
+SET REPORT_PATH_SQL=..\\TestResults
+SET SINGLE_FILE_REPORT=%REPORT_PATH%\SingleFileReport.txt
+SET UT_TMP=..\Tmp
+SET UT_TMP_SQL=..\\Tmp
+SET CONFIG_PATH=..\Config
+SET CONFIG_PATH_SQL=..\\Config
+
+REM This is a list of paths, separated with a semicolon, no spaces (like the PATH setting).
+SET UT_PATH=Src/Src_AL/Cust/In/In005/Test
+
+if not exist %UT_TMP% (
+  md %UT_TMP%
+)
+
+if not exist %REPORT_PATH% (
+  md %REPORT_PATH%
+)
+
+if exist ..\Config\%CONFIGURATION%_options.bat (
+  if DEFINED CONFIGURATION (
+    REM DEBUG: echo OVERRIDING CONFIGURATION WITH: ..\Config\%CONFIGURATION%_options.bat
+    call ..\Config\%CONFIGURATION%_options.bat
+  ) else (
+    REM DEBUG: echo No options extension defined.
+  )
+)

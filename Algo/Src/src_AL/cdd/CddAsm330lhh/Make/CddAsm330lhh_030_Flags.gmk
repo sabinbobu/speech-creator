@@ -1,0 +1,5 @@
+# ******************************************************************************
+# (C) Automotive Lighting Italy S.r.l. - Venaria Reale (TO), Italy
+# ******************************************************************************
+
+C_INCLUDES_CDDASM330LHH = $(PATH_SRC_CDD_BASE)/CddAsm330lhh/Api

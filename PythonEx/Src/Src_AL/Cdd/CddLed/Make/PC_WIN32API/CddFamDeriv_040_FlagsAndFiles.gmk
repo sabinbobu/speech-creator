@@ -1,0 +1,11 @@
+
+
+C_INCLUDES_CDDLED = $(PATH_SRC_CDD)/CddLed                                   \
+                    $(PATH_SRC_CDD)/CddLed/Api                               \
+                    $(PATH_SRC_CDD)/CddLed/Adapter                           \
+                    $(PATH_SRC_CDD)/CddLed/Cfg                               \
+                    $(PATH_SRC_CDD)/CddLed/Test
+
+
+FILES_SRC_CDDLED  = $(PATH_SRC_CDD)/CddLed/Gen/CddLed                        \
+                    $(PATH_SRC_CDD)/CddLed/Adapter/CddLed_Adapter

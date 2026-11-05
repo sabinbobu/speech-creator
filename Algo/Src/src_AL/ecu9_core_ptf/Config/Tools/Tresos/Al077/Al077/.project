@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>Al077</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+	</buildSpec>
+	<natures>
+		<nature>dreisoft.tresos.launcher2.plugin.ecucnature</nature>
+		<nature>dreisoft.tresos.launcher2.plugin.launchernature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>mcal</name>
+			<type>2</type>
+			<locationURI>$%7BPARENT-5-PROJECT_LOC%7D/Src/config_AL/Al/Al077/mcal</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>

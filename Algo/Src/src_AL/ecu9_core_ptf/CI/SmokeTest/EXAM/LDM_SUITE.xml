@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<examExchangeData codePath="D:\EXAM44\userData\pCode\exam">
+    <fileType id="EXAM" version="2.0"/>
+    <testSuite id="2cd26b8d-25cd-4d41-a258-c63c022895fe" name="LDM_SUITE" description="" fullScopedName="_05_SystemIntegrationTest.DevicesUnderTest.PSA.LDM.LDM_SUITE" runs="1" state="active" systemConfiguration="" teachAndReplay="0">
+        <chapters>
+            <chapter name="_05_SystemIntegrationTest" description="">
+                <chapter name="DevicesUnderTest" description="">
+                    <chapter name="PSA" description="">
+                        <chapter name="LDM" description=""/>
+                    </chapter>
+                </chapter>
+            </chapter>
+        </chapters>
+        <metaData>
+            <metaDataItem label="project" value=""/>
+            <metaDataItem label="mail" value=""/>
+            <metaDataItem label="title" value=""/>
+            <metaDataItem label="phone" value=""/>
+            <metaDataItem label="subject" value=""/>
+            <metaDataItem label="department" value=""/>
+            <metaDataItem label="comment" value=""/>
+            <metaDataItem label="operator" value=""/>
+        </metaData>
+        <testGroup id="a6d04e80-5a7d-4191-992b-2cd79ee70d2b" name="initialization" description="" runs="1" state="active" type="initialization" teachAndReplay="0">
+            <testCase id="a423d0f9-c60f-4171-aba3-6107f9015210" name="AC_InitEnvironment" description="" fullScopedName="_02_AlCore._GenericSequences.Initialization.AC_InitEnvironment" expectedTime="--:--:--:--" runs="1" retry="0" state="active" type="administrativeCase" teachAndReplay="0">
+                <testAttribute label="duration" value="--:--:--:--"/>
+            </testCase>
+            <testCase id="69c10070-c664-4494-a43c-f4f40ea79183" name="AC_InitALRestbus3_LDM_LEFT" description="" fullScopedName="_05_SystemIntegrationTest.DevicesUnderTest.PSA.LDM._common.restbusSetup.AC_InitALRestbus3_LDM_LEFT" expectedTime="--:--:--:--" runs="1" retry="0" state="active" type="administrativeCase" teachAndReplay="0">
+                <testAttribute label="duration" value="--:--:--:--"/>
+            </testCase>
+            <testCase id="6427a57f-014b-496b-9a8d-093e7c8412cc" name="AC_InitALRestbus3_VirtualCAN_LEFT" description="" fullScopedName="_05_SystemIntegrationTest.DevicesUnderTest.PSA.LDM._common.restbusSetup.AC_InitALRestbus3_VirtualCAN_LEFT" expectedTime="--:--:--:--" runs="1" retry="0" state="active" type="administrativeCase" teachAndReplay="0">
+                <testAttribute label="duration" value="--:--:--:--"/>
+            </testCase>
+            <testCase id="ea93e338-1c1e-4d21-9e73-47e8908265a4" name="AC_StartAllRestbusInstances" description="" fullScopedName="_05_SystemIntegrationTest.DevicesUnderTest.PSA.LDM._common.restbusSetup.AC_StartAllRestbusInstances" expectedTime="--:--:--:--" runs="1" retry="0" state="active" type="administrativeCase" teachAndReplay="0">
+                <testAttribute label="duration" value="--:--:--:--"/>
+            </testCase>
+        </testGroup>
+        <testGroup id="bfc9fee7-0e51-4695-b923-791c9a16878b" name="SmokeTests" description="" runs="1" state="active" type="execute" teachAndReplay="0">
+            <testCase id="299b44a6-b53a-482c-80cb-691c427de788" name="TC_TryPowerSupply" description="" fullScopedName="_05_SystemIntegrationTest.DevicesUnderTest.PSA.LDM.SmokeTests.TC_TryPowerSupply" expectedTime="--:--:--:--" runs="1" retry="0" state="active" type="testCase" teachAndReplay="0">
+                <testAttribute label="ToBeSynchronized" value="true"/>
+                <testAttribute label="ToBeSynchronizedComment" value=""/>
+                <testAttribute label="duration" value="--:--:--:--"/>
+                <testAttribute label="functionalRequirement" value=""/>
+                <testAttribute label="implementationPriority" value="low"/>
+                <testAttribute label="riskEvaluation" value="latent"/>
+                <testAttribute label="shadowTestCaseState" value=""/>
+                <testAttribute label="syncId" value=""/>
+                <testAttribute label="testCaseId" value="299b44a6-b53a-482c-80cb-691c427de788"/>
+                <testAttribute label="testCaseState" value="not yet specified"/>
+                <testAttribute label="testCaseStateComment" value=""/>
+                <testAttribute label="version" value=""/>
+            </testCase>
+        </testGroup>
+        <testGroup id="363c89b3-ad1c-433b-995c-f817274bbe6d" name="deInitialization" description="" runs="1" state="active" type="deInitialization" teachAndReplay="0">
+            <testCase id="fca10389-6399-4055-bb6a-2a9cd1466ad0" name="AC_DeinitRestbus3" description="" fullScopedName="_05_SystemIntegrationTest.DevicesUnderTest.PSA.LDM._common.restbusSetup.AC_DeinitRestbus3" expectedTime="--:--:--:--" runs="1" retry="0" state="active" type="administrativeCase" teachAndReplay="0">
+                <testAttribute label="duration" value="--:--:--:--"/>
+            </testCase>
+            <testCase id="353c4226-baee-4138-be64-7d982803d2f8" name="AC_DeInitEnvironment" description="" fullScopedName="_02_AlCore._GenericSequences.DeInitialization.AC_DeInitEnvironment" expectedTime="--:--:--:--" runs="1" retry="0" state="active" type="administrativeCase" teachAndReplay="0">
+                <testAttribute label="duration" value="--:--:--:--"/>
+            </testCase>
+        </testGroup>
+    </testSuite>
+</examExchangeData>

@@ -1,0 +1,12 @@
+
+C_INCLUDES_CDDEXAMPLE  = $(PATH_SRC_CDD)/CddExample/Api
+
+C_INCLUDES            := $(C_INCLUDES_CDDEXAMPLE)                                            \
+                         $(C_INCLUDES)
+
+
+
+FILES_SRC_CDDEXAMPLE  = $(PATH_SRC_CDD)/CddExample/Gen/CddExample
+
+FILES_SRC_CDD    := $(FILES_SRC_CDD)                                                   \
+                    $(FILES_SRC_CDDEXAMPLE)

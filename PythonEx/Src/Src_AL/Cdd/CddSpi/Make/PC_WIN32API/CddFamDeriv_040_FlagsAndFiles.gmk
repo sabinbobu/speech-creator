@@ -1,0 +1,18 @@
+C_INCLUDES_CDDSPI = $(PATH_SRC_CDD)/CddSpi/Api                                                                                                    \
+                    $(PATH_SRC_CDD)/CddSpi/$(TYP_FAMILY)/$(TYP_FAMILY)_$(TYP_DERIV)  \
+                    $(PATH_SRC_CDD)/CddSpi                 \
+                    $(PATH_SRC_CDD)/CddSpi/S32K/S32K_14X                 \
+                    $(PATH_SRC_CDD)/CddSpi/Gen                 \
+                    $(PATH_SRC_CUST)/Cdd/CddSpi        \
+                    $(PATH_SRC_CUST)/Cdd/CddSpi/Cfg      
+
+FILES_SRC_CDDSPI  = $(PATH_SRC_CDD)/CddSpi/Gen/CddSpi                                                                  \
+                    $(PATH_SRC_CDD)/CddSpi/S32K/S32K_14X/CddSpi_S32K_14X                                               \
+                    $(PATH_SRC_CUST)/Cdd/CddSpi/CddSpi_CallOuts                                                        \
+                    $(PATH_SRC_CDD)/CddSpi/$(TYP_FAMILY)/$(TYP_FAMILY)_$(TYP_DERIV)/CddSpi_$(TYP_FAMILY)_$(TYP_DERIV)
+
+C_INCLUDES       := $(C_INCLUDES_CDDSPI)                                               \
+                    $(C_INCLUDES)
+
+FILES_SRC_CDD    := $(FILES_SRC_CDD)                                                   \
+                    $(FILES_SRC_CDDSPI)
