@@ -1,0 +1,11 @@
+# ******************************************************************************
+# CddDcm: DC motor CDD ported from DPE ECO (ASL levelling chain).
+# See src_AL/app/swc_levelling/PORT_CHANGES.md.
+# ******************************************************************************
+
+# Gen and Cfg too, not only Api: CddDcmHal.c includes <CddDcmHal.h>, <CddDcmCtrl.h>
+# and <CddDcm_Cfg.h> with angle brackets, which never search the source's own folder.
+# CddDcm also needs C_INCLUDES_ILCULEVELLING (it includes ILCU_LevellingAdapter.h).
+C_INCLUDES_CDDDCM = $(PATH_SRC_CDD_BASE)/CddDcm/Api \
+                    $(PATH_SRC_CDD_BASE)/CddDcm/Gen \
+                    $(PATH_SRC_CDD_BASE)/CddDcm/Cfg

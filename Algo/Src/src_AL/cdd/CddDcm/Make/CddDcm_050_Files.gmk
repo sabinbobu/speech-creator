@@ -1,0 +1,7 @@
+# ******************************************************************************
+# CddDcm: DC motor CDD ported from DPE ECO (ASL levelling chain).
+# See src_AL/app/swc_levelling/PORT_CHANGES.md.
+# ******************************************************************************
+
+FILES_SRC_CDDDCM = $(PATH_SRC_CDD_BASE)/CddDcm/Gen/CddDcmCtrl \
+                   $(PATH_SRC_CDD_BASE)/CddDcm/Gen/CddDcmHal

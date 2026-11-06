@@ -1,0 +1,18 @@
+# ******************************************************************************
+# ASL levelling chain ported from DPE ECO (AvacStat1 -> CtrlDcm -> CddDcm)
+# plus ILCU_LevellingAdapter. See ../PORT_CHANGES.md.
+# ******************************************************************************
+
+# Derived from the existing CDD base path (Src/src_AL/cdd) because the app base
+# variable of the ILCU make tree is not part of this source snapshot.
+PATH_SRC_ILCULEVELLING ?= $(PATH_SRC_CDD_BASE)/../app/swc_levelling
+
+# IoHwAb/internal: the adapter needs IoHwAb_Internals.h, because CTRL_LWR PWM
+# and the LWR feedback ADC channel have no public IoHwAb wrapper in Al077a.
+# CddDcm lives in src_AL/cdd/CddDcm with its own fragments (C_INCLUDES_CDDDCM);
+# CtrlDcm and the adapter include CddDcm.h, so both fragment pairs are needed.
+C_INCLUDES_ILCULEVELLING = $(PATH_SRC_ILCULEVELLING)                  \
+                           $(PATH_SRC_ILCULEVELLING)/AvacStat1        \
+                           $(PATH_SRC_ILCULEVELLING)/CtrlDcm          \
+                           $(PATH_SRC_ILCULEVELLING)/CtrlDcm/Api      \
+                           $(PATH_SRC_BSW)/IoHwAb/internal

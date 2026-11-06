@@ -1,0 +1,20 @@
+# ******************************************************************************
+# ASL levelling chain ported from DPE ECO (AvacStat1 -> CtrlDcm -> CddDcm)
+# plus ILCU_LevellingAdapter. See ../PORT_CHANGES.md.
+# Entries without extension, basenames unique in ILCU (BuildSystem.md 6.1).
+# ******************************************************************************
+
+PATH_SRC_ILCULEVELLING ?= $(PATH_SRC_CDD_BASE)/../app/swc_levelling
+
+FILES_SRC_ILCULEVELLING = $(PATH_SRC_ILCULEVELLING)/ILCU_LevellingAdapter          \
+                          $(PATH_SRC_ILCULEVELLING)/AvacStat1/AvacStat1             \
+                          $(PATH_SRC_ILCULEVELLING)/AvacStat1/AvacStat1Data         \
+                          $(PATH_SRC_ILCULEVELLING)/AvacStat1/AvacStat1Init         \
+                          $(PATH_SRC_ILCULEVELLING)/AvacStat1/AvacStat1Util         \
+                          $(PATH_SRC_ILCULEVELLING)/AvacStat1/ctaaAvacStat1         \
+                          $(PATH_SRC_ILCULEVELLING)/CtrlDcm/CtrlDcm                 \
+                          $(PATH_SRC_ILCULEVELLING)/CtrlDcm/CtrlDcmSm               \
+                          $(PATH_SRC_ILCULEVELLING)/CtrlDcm/CtrlDcm_Data            \
+                          $(PATH_SRC_ILCULEVELLING)/CtrlDcm/CtrlDcm_RteAccess       \
+                          $(PATH_SRC_ILCULEVELLING)/CtrlDcm/ctaaCtrlDcm
+# CddDcm sources: src_AL/cdd/CddDcm/Make/CddDcm_050_Files.gmk (FILES_SRC_CDDDCM)
