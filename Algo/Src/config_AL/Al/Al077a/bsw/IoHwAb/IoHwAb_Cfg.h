@@ -53,6 +53,11 @@ extern FUNC(Std_ReturnType, IOHWAB_CODE) IoHwAb_DiscreteEN_LWR_Write
   VAR(IoHwAb_LevelType, AUTOMATIC) Level
 );
 
+extern FUNC(Std_ReturnType, IOHWAB_CODE) IoHwAb_PwmCTRL_LWR_SetDutyCycle
+(
+  VAR(IoHwAb_DutyCycleType, AUTOMATIC) DutyCycle
+);
+
 extern FUNC(Std_ReturnType, IOHWAB_CODE) IoHwAb_PwmLEDCTRL1_SetDutyCycle
 (
   P2VAR(IoHwAb_DutyCycleType, AUTOMATIC, IOHWAB_APPL_DATA) DutyCycle

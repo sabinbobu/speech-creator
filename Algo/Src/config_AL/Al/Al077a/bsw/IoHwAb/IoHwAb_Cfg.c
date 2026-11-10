@@ -68,6 +68,14 @@ FUNC(Std_ReturnType, IOHWAB_CODE) IoHwAb_DiscreteEN_LWR_Write
   return RetVal;
 }
 
+FUNC(Std_ReturnType, IOHWAB_CODE) IoHwAb_PwmCTRL_LWR_SetDutyCycle
+(
+  VAR(IoHwAb_DutyCycleType, AUTOMATIC) DutyCycle
+)
+{
+  return IoHwAb_TimingSetDutyCycle(IOHWAB_CHID_CTRL_LWR, DutyCycle);
+}
+
 FUNC(Std_ReturnType, IOHWAB_CODE) IoHwAb_PwmLEDCTRL1_SetDutyCycle
 (
   P2VAR(IoHwAb_DutyCycleType, AUTOMATIC, IOHWAB_APPL_DATA) DutyCycle

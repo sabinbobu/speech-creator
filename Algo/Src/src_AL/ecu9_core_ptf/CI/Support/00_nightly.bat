@@ -1,8 +1,0 @@
-@echo off
-SETLOCAL ENABLEDELAYEDEXPANSION
-cls
-
-SET CONFIGURATION=NIGHTLY
-
-
-call do_integration.bat

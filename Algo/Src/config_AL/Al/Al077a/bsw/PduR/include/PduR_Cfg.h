@@ -9,5 +9,6 @@
 #define PDUR_ENDPOINT_CANIF     (2u)
 #define PDUR_IMU_STATUS_TX_ROUTE_ID  (0u)
 #define PDUR_BCM_STATUS_RX_ROUTE_ID (1u)
+#define PDUR_FILTERED_PITCH_TX_ROUTE_ID (2u)
 
 #endif

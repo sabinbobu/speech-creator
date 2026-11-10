@@ -1,8 +1,0 @@
-{
-  "files": [
-	{
-		"pattern": "${WORKSPACE}\CI\TestResults**",
-		"target": "${_ARTIFACTORY_URL}/TestResults/"
-	}
-]
-}

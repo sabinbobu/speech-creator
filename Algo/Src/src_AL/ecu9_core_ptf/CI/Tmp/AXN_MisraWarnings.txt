@@ -1,5 +1,0 @@
-C:\wsdrive\MyGitRepos\ALDOO\Src\Src_AL\Cust\Bw\Bw018\App\Swc\CtrlDisp\CtrlDisp_IntMem\CtrlDisp_IntMem.c:1623:14: advisory: Global variable can be declared inside function. [lookUpTable_Calibration[], ProcessFrameChunk()] (Rule MisraC2012-8.9)
-C:\wsdrive\MyGitRepos\ALDOO\Src\Src_AL\Cust\Bw\Bw018\App\Swc\CtrlDisp\CtrlDisp_Manager\CtrlDisp_Manager.c:971:17: advisory: Global variable can be declared inside function. [tempCodGammaCurve0[], EvaluateCodingParameters()] (Rule MisraC2012-8.9)
-C:\wsdrive\MyGitRepos\ALDOO\Src\Src_AL\Cust\Bw\Bw018\App\Swc\CtrlDisp\CtrlDisp_Manager\CtrlDisp_ManagerStub.c:24:8: advisory: Global variable can be declared inside function. [FCx_Expected[], ApplyDerating()] (Rule MisraC2012-8.9)
-C:\wsdrive\MyGitRepos\ALDOO\Src\Src_AL\Cust\Bw\Bw018\App\Swc\CtrlDisp\CtrlDisp_Manager\CtrlDisp_Hsm.c:29:13: advisory: Identifiers only differ in casing [Typedef 'State' vs. Parameter 'state'] (Rule MisraC2012Directive-4.5)
-C:\wsdrive\MyGitRepos\ALDOO\Src\Src_AL\Cust\Bw\Bw018\App\Swc\CtrlDisp\CtrlDisp_Manager\CtrlDisp_Hsm.c:219:13: advisory: Identifiers only differ in casing [Typedef 'State' vs. Local variable 'state'] (Rule MisraC2012Directive-4.5)

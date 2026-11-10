@@ -4,7 +4,7 @@
 # Entries without extension, basenames unique in ILCU (BuildSystem.md 6.1).
 # ******************************************************************************
 
-PATH_SRC_ILCULEVELLING ?= $(PATH_SRC_CDD_BASE)/../app/swc_levelling
+PATH_SRC_ILCULEVELLING ?= $(PATH_SRC_BASE)/src_AL/app/swc_levelling# ILCU_PORT: preserve the repository's exact src_AL casing
 
 FILES_SRC_ILCULEVELLING = $(PATH_SRC_ILCULEVELLING)/ILCU_LevellingAdapter          \
                           $(PATH_SRC_ILCULEVELLING)/AvacStat1/AvacStat1             \

@@ -3,9 +3,8 @@
 # plus ILCU_LevellingAdapter. See ../PORT_CHANGES.md.
 # ******************************************************************************
 
-# Derived from the existing CDD base path (Src/src_AL/cdd) because the app base
-# variable of the ILCU make tree is not part of this source snapshot.
-PATH_SRC_ILCULEVELLING ?= $(PATH_SRC_CDD_BASE)/../app/swc_levelling
+# PATH_SRC_AL in Make_010_Paths.gmk spells Src_AL; use PATH_SRC_BASE for exact src_AL case. # ILCU_PORT: exact-case path correction
+PATH_SRC_ILCULEVELLING ?= $(PATH_SRC_BASE)/src_AL/app/swc_levelling# ILCU_PORT: preserve the repository's exact src_AL casing
 
 # IoHwAb/internal: the adapter needs IoHwAb_Internals.h, because CTRL_LWR PWM
 # and the LWR feedback ADC channel have no public IoHwAb wrapper in Al077a.

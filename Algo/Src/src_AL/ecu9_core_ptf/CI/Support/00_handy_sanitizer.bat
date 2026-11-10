@@ -1,8 +1,0 @@
-@echo off
-SETLOCAL ENABLEDELAYEDEXPANSION
-cls
-
-SET CONFIGURATION=SANITIZER
-
-
-call do_integration.bat

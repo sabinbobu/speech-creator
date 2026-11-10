@@ -11,6 +11,7 @@
 #define CANIF_CHANNEL_ID        (0u)
 #define CANIF_CAN_ID_IMU_STATUS (0x200u)
 #define CANIF_CAN_ID_BCM_STATUS (0x100u)
+#define CANIF_CAN_ID_FILTERED_PITCH (0x201u)
 
 #define CANIF_OBJECT_TX         (0u)
 #define CANIF_OBJECT_RX         (1u)

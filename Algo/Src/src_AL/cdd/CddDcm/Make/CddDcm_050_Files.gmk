@@ -3,5 +3,4 @@
 # See src_AL/app/swc_levelling/PORT_CHANGES.md.
 # ******************************************************************************
 
-FILES_SRC_CDDDCM = $(PATH_SRC_CDD_BASE)/CddDcm/Gen/CddDcmCtrl \
-                   $(PATH_SRC_CDD_BASE)/CddDcm/Gen/CddDcmHal
+FILES_SRC_CDDDCM = $(PATH_SRC_BASE)/src_AL/cdd/CddDcm/Gen/CddDcmCtrl $(PATH_SRC_BASE)/src_AL/cdd/CddDcm/Gen/CddDcmHal # ILCU_PORT: preserve the repository's exact src_AL casing

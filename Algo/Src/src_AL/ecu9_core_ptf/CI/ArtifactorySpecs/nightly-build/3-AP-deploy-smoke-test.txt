@@ -1,8 +1,0 @@
-{
-  "files": [
-	{
-	  "pattern": "${WORKSPACE}\CI\SmokeTest\EXAM\reports\**",
-	  "target": "${_ARTIFACTORY_URL}/TestResults/SmokeTest/"
-	}
-]
-}

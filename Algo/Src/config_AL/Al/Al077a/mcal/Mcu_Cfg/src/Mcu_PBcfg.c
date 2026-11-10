@@ -220,7 +220,7 @@ static CONST(Mcu_ClockConfigType, MCU_CONFIG_DATA) Mcu_ClockConfiguration[] =
     [4] =
     {
         .Mcu_ClockModuleId = MCU_CLKSRC_MODULE_ID_TIMG9,
-        .Mcu_ClockSourceId = MCU_CLKSRC_ULPCLK,
+        .Mcu_ClockSourceId = MCU_CLKSRC_BUSCLK,
         .Mcu_ClockDiv = 0,
         .Mcu_ClockPreScaler = MCU_CLOCK_PRE_SCALER_INVALID,
         .Mcu_InitCfg  = TRUE,
@@ -443,4 +443,3 @@ CONST(Mcu_ConfigType, MCU_CONFIG_DATA) Mcu_Config =
 /**********************************************************************************************************************
  *  End of File: Mcu_PBcfg.c
  *********************************************************************************************************************/
-

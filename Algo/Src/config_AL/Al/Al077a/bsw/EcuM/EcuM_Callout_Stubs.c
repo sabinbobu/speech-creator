@@ -178,7 +178,7 @@ FUNC(void, ECUM_CODE) EcuM_AL_DriverInitOne(void)
     if ((CanIf_Init(&CanIf_Config) != CANIF_OK) ||
         (PduR_Init(&PduR_Config) != PDUR_OK) ||
         (Com_Init(&Com_Config) != COM_STATUS_OK) ||
-        (PduR_Start(0U, 0x03U) != PDUR_OK) ||
+        (PduR_Start(0U, 0x07U) != PDUR_OK) ||
         (CanIf_Start(0x01U, 0x01U) != CANIF_OK) ||
         (Com_Start() != COM_STATUS_OK))
     {

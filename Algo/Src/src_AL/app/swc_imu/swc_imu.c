@@ -9,6 +9,39 @@ static const sint16 SwcImu_AtanCdeg[15] =
 static uint8 SwcImu_CycleCount;
 static sint32 SwcImu_YawCdeg;
 static sint32 SwcImu_YawRemainder;
+static volatile Std_ReturnType SwcImu_MotorOutputStatus;
+
+static uint16 SwcImu_PitchToDutyPermille(sint16 Pitch_cdeg)
+{
+    sint32 Pitch = Pitch_cdeg;
+
+    if (Pitch <= -5000)
+    {
+        return 0u;
+    }
+    if (Pitch >= 5000)
+    {
+        return 1000u;
+    }
+
+    return (uint16)((Pitch + 5000) / 10);
+}
+
+static void SwcImu_UpdateMotorOutput(sint16 Pitch_cdeg)
+{
+    uint16 DutyPermille = SwcImu_PitchToDutyPermille(Pitch_cdeg);
+
+    SwcImu_MotorOutputStatus = Rte_Call_ImuMotor_SetDutyPermille(DutyPermille);
+    if (SwcImu_MotorOutputStatus == E_OK)
+    {
+        SwcImu_MotorOutputStatus = Rte_Call_ImuMotor_SetEnable(TRUE);
+    }
+
+    if (SwcImu_MotorOutputStatus != E_OK)
+    {
+        (void)Rte_Call_ImuMotor_SetEnable(FALSE);
+    }
+}
 
 static uint32 SwcImu_IntegerSqrt(uint32 Value)
 {
@@ -98,6 +131,11 @@ void swc_imu_init(void)
     SwcImu_CycleCount = 0u;
     SwcImu_YawCdeg = 0;
     SwcImu_YawRemainder = 0;
+    SwcImu_MotorOutputStatus = Rte_Call_ImuMotor_SetEnable(FALSE);
+    if (Rte_Call_ImuMotor_SetDutyPermille(0u) != E_OK)
+    {
+        SwcImu_MotorOutputStatus = E_NOT_OK;
+    }
 }
 
 void swc_imu_MainFunction(void)
@@ -145,7 +183,9 @@ void swc_imu_MainFunction(void)
             SwcImu_YawCdeg += 36000;
         }
         Angles.Yaw_cdeg = (sint16)SwcImu_YawCdeg;
+        Angles.Temperature_cdeg = (sint16)Sample.Temp_cdeg;
 
+        SwcImu_UpdateMotorOutput(Angles.Pitch_cdeg);
         (void)Rte_Write_ImuAngles_Values(&Angles);
     }
 

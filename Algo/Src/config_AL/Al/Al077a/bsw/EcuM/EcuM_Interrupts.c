@@ -5,6 +5,7 @@
 #include "Icu_Cfg.h"
 #include "Icu_Irq.h"
 #include "Spi_Cfg.h"
+#include "Can_Irq.h"
 #include "msp.h"
 #include "hw_interrupt.h"
 #include "common_interrupt.h"
@@ -81,7 +82,18 @@ void EcuM_Interrupts_Init(void)
     NVIC_EnableIRQ(TIMG14_INT_IRQn);
     NVIC_SetPriority(TIMG14_INT_IRQn, 3);
 #endif
+#if defined(CAN_CONTROLLER_MCAN0)
+    NVIC_EnableIRQ(CANFD0_INT_IRQn);
+    NVIC_SetPriority(CANFD0_INT_IRQn, 3);
+#endif
 }
+
+#if defined(CAN_CONTROLLER_MCAN0)
+void CANFD0_IRQHandler(void)
+{
+    Can_0_Int0ISR();
+}
+#endif
 
 void GROUP0_IRQHandler(void)
 {

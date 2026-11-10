@@ -18,6 +18,16 @@ static const Com_SignalMeta_t Com_SignalTable[] =
         COM_NOTIFY_NONE
     },
     {
+        COM_SIGNAL_ID_IMU_TEMPERATURE, COM_PDU_ID_IMU_STATUS,
+        COM_SIGNAL_DIRECTION_TX, 48u, 16u, 0u, 0u, 1u, 1u,
+        COM_NOTIFY_NONE
+    },
+    {
+        COM_SIGNAL_ID_FILTERED_PITCH, COM_PDU_ID_FILTERED_PITCH,
+        COM_SIGNAL_DIRECTION_TX, 0u, 16u, 0u, 0u, 1u, 1u,
+        COM_NOTIFY_NONE
+    },
+    {
         COM_SIGNAL_ID_VEHICLE_SPEED, COM_PDU_ID_BCM_STATUS,
         COM_SIGNAL_DIRECTION_RX, 0u, 16u, 0u, 100u, 0u, 1u,
         COM_NOTIFY_NONE
@@ -39,7 +49,7 @@ static const Com_SignalMeta_t Com_SignalTable[] =
     }
 };
 
-static Com_SignalRuntime_t Com_SignalRuntime[7];
+static Com_SignalRuntime_t Com_SignalRuntime[9];
 
 static Com_PduMeta_t Com_PduTable[] =
 {
@@ -48,6 +58,9 @@ static Com_PduMeta_t Com_PduTable[] =
     },
     {
         COM_PDU_ID_BCM_STATUS, COM_PDU_DIRECTION_RX, 8u, 0u, 1u, 0u, 0u
+    },
+    {
+        COM_PDU_ID_FILTERED_PITCH, COM_PDU_DIRECTION_TX, 8u, 1u, 0u, 0u, 2u
     }
 };
 
@@ -55,10 +68,10 @@ static Com_NotificationQueue_t Com_NotificationQueue;
 
 const Com_Config_t Com_Config =
 {
-    7u,
+    9u,
     Com_SignalTable,
     Com_SignalRuntime,
-    2u,
+    3u,
     Com_PduTable,
     0u,
     &Com_NotificationQueue

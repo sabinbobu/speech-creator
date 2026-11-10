@@ -107,7 +107,7 @@ CONST(struct Pwm_ConfigType_s, PWM_CONFIG_DATA)
             .gpioPincmNum = 7,
             .gpioPin = 2,
             .gpioBaseAddr = GPIOA_BASE,
-            .hwPeriod =0x2710, /* Number of HW Unit ticks value which sets initial period */
+            .hwPeriod =0x2710, /* 10000 ticks at 40 MHz gives a 4 kHz PWM */
             .dutyCycle =0x4000U, /* Duty Cycle */
             .polarity = PWM_HIGH, /* Polarity */
             .idleState = PWM_LOW, /* Idle State */

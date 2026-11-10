@@ -1,9 +1,0 @@
-{
-    "firmwareBuild.scriptPath": "Build\\VS\\runBuildSelector.bat",
-    "firmwareBuild.targets": [
-        "Al077 H00 Proto App AXIVION",
-        "Al077 H00 Proto App",
-		"Al077a H00 Proto App",
-        "Al077 W00 Proto Mt_ApplBenchmark"
-    ]
-}
