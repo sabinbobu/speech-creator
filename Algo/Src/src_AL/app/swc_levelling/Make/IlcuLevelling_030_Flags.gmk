@@ -14,4 +14,6 @@ C_INCLUDES_ILCULEVELLING = $(PATH_SRC_ILCULEVELLING)                  \
                            $(PATH_SRC_ILCULEVELLING)/AvacStat1        \
                            $(PATH_SRC_ILCULEVELLING)/CtrlDcm          \
                            $(PATH_SRC_ILCULEVELLING)/CtrlDcm/Api      \
+                           $(PATH_SRC_BASE)/src_AL/rte                \
                            $(PATH_SRC_BSW)/IoHwAb/internal
+# ILCU_PORT: src_AL/rte added: the adapter's default pitch source includes Rte_Imu.h and Rte_Iara.h

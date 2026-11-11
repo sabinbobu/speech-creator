@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ILCU Levelling Overview</title>
+<style>
+  :root {
+    --bg: #f7f6f2; --panel: #ffffff; --ink: #1c2330; --muted: #5b6474; --line: #d6d3ca;
+    --lvl: #dbe8fb; --lvl-ink: #1f4f99; --imu: #ece2f8; --imu-ink: #6b3fa8;
+    --bsw: #e9ebee; --bsw-ink: #48505c; --hw: #fbecd0; --hw-ink: #8a5a08;
+    --bad: #c23b2e; --ok: #1f7a4a; --wait: #a86a00; --code: #eeece6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171c; --panel: #1c2027; --ink: #e6e8ec; --muted: #9aa3b2; --line: #343a45;
+      --lvl: #1d3557; --lvl-ink: #9cc2ff; --imu: #3a2a55; --imu-ink: #cfb0ff;
+      --bsw: #2a2f38; --bsw-ink: #b9c0cc; --hw: #4a3a16; --hw-ink: #f2c66d;
+      --bad: #ff7b6b; --ok: #5fd08f; --wait: #f0b24a; --code: #262b33;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 30px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 21px; margin: 44px 0 10px; padding-top: 14px; border-top: 2px solid var(--line); }
+  h3 { font-size: 16px; margin: 22px 0 6px; }
+  p { margin: 8px 0; max-width: 78ch; }
+  .lede { color: var(--muted); font-size: 17px; }
+  code { font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code); padding: 1px 5px; border-radius: 4px; }
+  .wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 4px; font-size: 14.5px; background: var(--panel); }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--bsw); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  figure { margin: 14px 0 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 12px 10px; }
+  figure svg { display: block; width: 100%; height: auto; min-width: 760px; }
+  figcaption { color: var(--muted); font-size: 14px; margin-top: 8px; max-width: 90ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13.5px; color: var(--muted); margin: 8px 0 0; }
+  .sw { display: inline-block; width: 13px; height: 13px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; border: 1px solid var(--line); }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .wait { color: var(--wait); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 12px 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .card h3 { margin: 0 0 4px; }
+  .card p { margin: 4px 0; font-size: 14.5px; }
+  .scn { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 14px 10px; margin: 12px 0; }
+  .scn h3 { margin-top: 12px; }
+  .scn .sum { color: var(--muted); font-size: 14.5px; }
+  /* SVG classes */
+  .bx { stroke: currentColor; stroke-width: 1.2; }
+  .f-lvl { fill: var(--lvl); } .f-imu { fill: var(--imu); } .f-bsw { fill: var(--bsw); } .f-hw { fill: var(--hw); } .f-pan { fill: var(--panel); }
+  .t { fill: currentColor; font: 600 13px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .s { fill: currentColor; font: 11.5px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; opacity: .82; }
+  .al { fill: currentColor; font: 11px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; opacity: .9; }
+  .row { fill: currentColor; font: 600 12px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: .06em; opacity: .7; }
+  .ar { stroke: currentColor; stroke-width: 1.4; fill: none; }
+  .arb { stroke: var(--bad); stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+  .tb { fill: var(--bad); } .tbt { fill: #fff; font: 700 11px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .bt { fill: var(--bad); font: 600 11px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Automatic static levelling on ILCU, driven by an IMU</h1>
+<p class="lede">How the ported DPE levelling chain is meant to work on the Al077a board, what each part does, and what happens in the situations a demo will hit. State of 2026-11-11. Evidence and patches are in <code>LEVELLING_PORT_REPORT.md</code>.</p>
+
+<h2>The idea in four sentences</h2>
+<p>When the rear of a car is loaded, the front rises and the low beam points too high. The IMU measures how far the body is pitched front-up. AvacStat1 turns that angle into a lamp angle that lowers the beam by the same amount, and only after the change has stayed for a moment. CddDcm then sets an analog voltage on the LWR_DC pin; the levelling actuator in the headlamp moves the reflector to the position that voltage stands for.</p>
+<p>Three DPE modules were ported unchanged in their logic: <strong>AvacStat1</strong> (how much), <strong>CtrlDcm</strong> (whether, and to what limits), <strong>CddDcm</strong> (how, electrically). One new file, <code>ILCU_LevellingAdapter.c</code>, connects them to ILCU: it supplies the pitch, the supply and feedback voltages, and the outputs.</p>
+
+<h2>Where things stand</h2>
+<div class="cards">
+  <div class="card">
+    <h3><span class="tag ok">works on host</span> swc_levelling</h3>
+    <p>Pitch input, signal quality, supply and feedback reading, safe start and demo timing are in place. Eight scenarios pass in a host harness that runs the real chain against a model of the real output stage.</p>
+  </div>
+  <div class="card">
+    <h3><span class="tag bad">blocks the demo</span> three things outside it</h3>
+    <p><strong>B1</strong> <code>Rte.c</code> does not call the chain. <strong>B2</strong> <code>swc_imu</code> drives the LWR pins itself. <strong>B3</strong> the IARA pitch stays 0 because <code>swc_imu</code> takes every IMU sample first.</p>
+  </div>
+  <div class="card">
+    <h3><span class="tag wait">not proven</span> target build and board</h3>
+    <p>Nothing was built with Keil or run on the ECU. Pitch sign, the TI driver's behaviour after PWM idle, and the supply divider values need a bench check.</p>
+  </div>
+</div>
+
+<h2>The whole signal path</h2>
+<figure>
+<svg viewBox="0 0 1100 590" role="img" aria-label="Signal path from the IMU through the levelling chain to the LWR_DC output, in three rows: sensing, levelling, output. Three red markers show where the chain is broken today.">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+    <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)"/></marker>
+  </defs>
+
+  <!-- row 1: sensing -->
+  <text class="row" x="20" y="20">SENSING · IMU OWNER</text>
+  <rect class="bx f-hw" x="20" y="56" width="170" height="60" rx="8"/>
+  <text class="t" x="105" y="81" text-anchor="middle">ASM330LHH</text>
+  <text class="s" x="105" y="99" text-anchor="middle">accelerometer + gyro</text>
+  <rect class="bx f-imu" x="235" y="56" width="170" height="60" rx="8"/>
+  <text class="t" x="320" y="81" text-anchor="middle">CddAsm330lhh</text>
+  <text class="s" x="320" y="99" text-anchor="middle">driver, mg and mdps</text>
+  <rect class="bx f-imu" x="450" y="56" width="170" height="60" rx="8"/>
+  <text class="t" x="535" y="81" text-anchor="middle">Rte.c</text>
+  <text class="s" x="535" y="99" text-anchor="middle">hands the sample on</text>
+  <rect class="bx f-imu" x="665" y="30" width="170" height="50" rx="8"/>
+  <text class="t" x="750" y="51" text-anchor="middle">swc_imu</text>
+  <text class="s" x="750" y="68" text-anchor="middle">accelerometer tilt → CAN</text>
+  <rect class="bx f-imu" x="665" y="94" width="170" height="50" rx="8"/>
+  <text class="t" x="750" y="115" text-anchor="middle">swc_iara + libiara</text>
+  <text class="s" x="750" y="132" text-anchor="middle">fused pitch, limited to ±3°</text>
+  <rect class="bx f-imu" x="880" y="94" width="200" height="50" rx="8"/>
+  <text class="t" x="980" y="115" text-anchor="middle">Rte_Iara_TargetPitch_cdeg</text>
+  <text class="s" x="980" y="132" text-anchor="middle">0.01° per count</text>
+
+  <line class="ar" x1="190" y1="86" x2="233" y2="86" marker-end="url(#ah)"/>
+  <text class="al" x="211" y="78" text-anchor="middle">SPI0</text>
+  <line class="ar" x1="405" y1="86" x2="448" y2="86" marker-end="url(#ah)"/>
+  <text class="al" x="426" y="78" text-anchor="middle">104 Hz</text>
+  <line class="ar" x1="620" y1="78" x2="663" y2="58" marker-end="url(#ah)"/>
+  <line class="arb" x1="620" y1="96" x2="663" y2="116" marker-end="url(#ahb)"/>
+  <line class="ar" x1="835" y1="119" x2="878" y2="119" marker-end="url(#ah)"/>
+  <text class="al" x="857" y="111" text-anchor="middle">10 ms</text>
+  <circle class="tb" cx="640" cy="122" r="10"/><text class="tbt" x="640" y="126" text-anchor="middle">B3</text>
+  <circle class="tb" cx="850" cy="42" r="10"/><text class="tbt" x="850" y="46" text-anchor="middle">B2</text>
+  <text class="bt" x="866" y="46">also writes EN_LWR and the PWM</text>
+
+  <!-- row 2: levelling (right to left) -->
+  <text class="row" x="20" y="208">LEVELLING · swc_levelling (YOURS) · EVERY 5 ms FROM BasicTask</text>
+  <circle class="tb" cx="470" cy="204" r="10"/><text class="tbt" x="470" y="208" text-anchor="middle">B1</text>
+  <text class="bt" x="486" y="208">no call in Rte.c yet</text>
+
+  <rect class="bx f-lvl" x="880" y="226" width="200" height="64" rx="8"/>
+  <text class="t" x="980" y="250" text-anchor="middle">Adapter: pitch</text>
+  <text class="s" x="980" y="267" text-anchor="middle">sign, filter, zero, quality</text>
+  <text class="s" x="980" y="281" text-anchor="middle">every 20 ms</text>
+  <rect class="bx f-lvl" x="665" y="226" width="170" height="64" rx="8"/>
+  <text class="t" x="750" y="250" text-anchor="middle">AvacStat1</text>
+  <text class="s" x="750" y="267" text-anchor="middle">car angle → lamp angle</text>
+  <text class="s" x="750" y="281" text-anchor="middle">decides every 100 ms</text>
+  <rect class="bx f-lvl" x="450" y="226" width="170" height="64" rx="8"/>
+  <text class="t" x="535" y="250" text-anchor="middle">CtrlDcm</text>
+  <text class="s" x="535" y="267" text-anchor="middle">Init / Adj / Fail, limits</text>
+  <text class="s" x="535" y="281" text-anchor="middle">every 20 ms</text>
+  <rect class="bx f-lvl" x="235" y="226" width="170" height="64" rx="8"/>
+  <text class="t" x="320" y="250" text-anchor="middle">CddDcm</text>
+  <text class="s" x="320" y="267" text-anchor="middle">voltage loop, short detection</text>
+  <text class="s" x="320" y="281" text-anchor="middle">5 ms / 20 ms</text>
+  <rect class="bx f-lvl" x="20" y="226" width="170" height="64" rx="8"/>
+  <text class="t" x="105" y="250" text-anchor="middle">Adapter: hardware</text>
+  <text class="s" x="105" y="267" text-anchor="middle">PWM, enable, mV readings</text>
+  <text class="s" x="105" y="281" text-anchor="middle">starts the ADC</text>
+
+  <line class="ar" x1="980" y1="144" x2="980" y2="224" marker-end="url(#ah)"/>
+  <text class="al" x="988" y="180">× 349 / 200</text>
+  <text class="al" x="988" y="194">→ 0.1 mrad</text>
+  <line class="ar" x1="880" y1="258" x2="837" y2="258" marker-end="url(#ah)"/>
+  <text class="al" x="858" y="250" text-anchor="middle">angle</text>
+  <line class="ar" x1="665" y1="258" x2="622" y2="258" marker-end="url(#ah)"/>
+  <text class="al" x="643" y="250" text-anchor="middle">0.01°</text>
+  <line class="ar" x1="450" y1="258" x2="407" y2="258" marker-end="url(#ah)"/>
+  <text class="al" x="428" y="250" text-anchor="middle">target</text>
+  <line class="ar" x1="235" y1="248" x2="192" y2="248" marker-end="url(#ah)"/>
+  <text class="al" x="213" y="240" text-anchor="middle">duty, EN</text>
+  <line class="ar" x1="190" y1="272" x2="233" y2="272" marker-end="url(#ah)"/>
+  <text class="al" x="213" y="286" text-anchor="middle">mV</text>
+
+  <!-- row 3: output -->
+  <text class="row" x="20" y="398">OUTPUT · BSW CONFIGURATION AND BOARD</text>
+  <rect class="bx f-bsw" x="20" y="416" width="170" height="64" rx="8"/>
+  <text class="t" x="105" y="443" text-anchor="middle">IoHwAb</text>
+  <text class="s" x="105" y="461" text-anchor="middle">channel tables</text>
+  <rect class="bx f-bsw" x="235" y="416" width="170" height="64" rx="8"/>
+  <text class="t" x="320" y="443" text-anchor="middle">MCAL</text>
+  <text class="s" x="320" y="461" text-anchor="middle">Pwm · Dio · Adc</text>
+  <rect class="bx f-hw" x="450" y="416" width="170" height="64" rx="8"/>
+  <text class="t" x="535" y="440" text-anchor="middle">MCU pins</text>
+  <text class="s" x="535" y="457" text-anchor="middle">PA2 PWM · PA3 enable</text>
+  <text class="s" x="535" y="471" text-anchor="middle">PA15, PB24 analog in</text>
+  <rect class="bx f-hw" x="665" y="416" width="170" height="64" rx="8"/>
+  <text class="t" x="750" y="443" text-anchor="middle">AVAC stage</text>
+  <text class="s" x="750" y="461" text-anchor="middle">filter, op-amp × 5.21</text>
+  <rect class="bx f-hw" x="880" y="416" width="200" height="64" rx="8"/>
+  <text class="t" x="980" y="443" text-anchor="middle">Levelling actuator</text>
+  <text class="s" x="980" y="461" text-anchor="middle">LWR_DC, connector pin 5</text>
+
+  <line class="ar" x1="95" y1="290" x2="95" y2="414" marker-end="url(#ah)"/>
+  <line class="ar" x1="115" y1="416" x2="115" y2="292" marker-end="url(#ah)"/>
+  <text class="al" x="124" y="350">write / read</text>
+  <line class="ar" x1="190" y1="438" x2="233" y2="438" marker-end="url(#ah)"/>
+  <line class="ar" x1="405" y1="438" x2="448" y2="438" marker-end="url(#ah)"/>
+  <line class="ar" x1="620" y1="438" x2="663" y2="438" marker-end="url(#ah)"/>
+  <line class="ar" x1="835" y1="438" x2="878" y2="438" marker-end="url(#ah)"/>
+  <text class="al" x="857" y="430" text-anchor="middle">volts</text>
+  <line class="ar" x1="665" y1="462" x2="622" y2="462" marker-end="url(#ah)"/>
+  <text class="al" x="643" y="476" text-anchor="middle">÷ 6.5</text>
+  <line class="ar" x1="450" y1="462" x2="407" y2="462" marker-end="url(#ah)"/>
+  <line class="ar" x1="235" y1="462" x2="192" y2="462" marker-end="url(#ah)"/>
+  <text class="al" x="213" y="476" text-anchor="middle">counts</text>
+
+  <rect class="bx f-hw" x="450" y="520" width="170" height="44" rx="8"/>
+  <text class="t" x="535" y="540" text-anchor="middle">KL15 supply</text>
+  <text class="s" x="535" y="555" text-anchor="middle">pin 1, divided by 6.5</text>
+  <line class="ar" x1="535" y1="520" x2="535" y2="482" marker-end="url(#ah)"/>
+  <circle class="tb" cx="60" cy="398" r="10" transform="translate(300 0)"/><text class="tbt" x="360" y="402" text-anchor="middle">B2</text>
+  <line class="arb" x1="352" y1="406" x2="330" y2="416"/>
+</svg>
+<figcaption>One pitch value travels from the IMU (top row, left to right), through the levelling chain (middle row, right to left), to a voltage on the LWR_DC pin (bottom row). The supply and the output voltage are read back the same way and close CddDcm's control loop. Red markers: <strong>B1</strong> the middle row is never called; <strong>B2</strong> <code>swc_imu</code> writes the same two output pins; <strong>B3</strong> the sample never reaches the fusion.</figcaption>
+<div class="legend">
+  <span><span class="sw" style="background:var(--lvl)"></span>swc_levelling: AvacStat1, CtrlDcm, CddDcm, adapter</span>
+  <span><span class="sw" style="background:var(--imu)"></span>IMU owner</span>
+  <span><span class="sw" style="background:var(--bsw)"></span>platform and configuration</span>
+  <span><span class="sw" style="background:var(--hw)"></span>hardware</span>
+</div>
+</figure>
+
+<h2>One value, seven units</h2>
+<p>Every hand-over changes the unit. The table follows a front-up pitch of 1.00° at a 12.0 V supply. All numbers come from the host harness.</p>
+<div class="wrap">
+<table>
+  <tr><th>Stage</th><th>Signal</th><th>Unit</th><th>Rule</th><th class="num">+1.00° gives</th></tr>
+  <tr><td>IARA output</td><td><code>Rte_Iara_TargetPitch_cdeg</code></td><td>0.01°</td><td>front-up must be positive</td><td class="num">100</td></tr>
+  <tr><td>Adapter</td><td><code>ILCU_LvlAdp_PitchOut</code></td><td>0.1 mrad</td><td>× 349 / 200, minus the zero reference</td><td class="num">174</td></tr>
+  <tr><td>AvacStat1</td><td>headlight angle</td><td>0.1 mrad</td><td>minus the car angle; car angle clamped to 0…875</td><td class="num">−174</td></tr>
+  <tr><td>AvacStat1 → CtrlDcm</td><td><code>Position[0].Ver</code></td><td>0.01°</td><td>× 180 / 314</td><td class="num">−100</td></tr>
+  <tr><td>CtrlDcm → CddDcm</td><td>target position</td><td>0.01°</td><td>clamped to −300…0</td><td class="num">−100</td></tr>
+  <tr><td>CddDcm</td><td>actuator position</td><td>‰</td><td>800 + 2 × target, limits 200…800</td><td class="num">600</td></tr>
+  <tr><td>CddDcm</td><td>output level</td><td>‰ of KL15</td><td>1000 − position</td><td class="num">400</td></tr>
+  <tr><td>Pin PA2</td><td>PWM duty</td><td>‰</td><td>level × KL15 / 17.32 V, then trimmed by the loop</td><td class="num">278</td></tr>
+  <tr><td>Connector pin 5</td><td>LWR_DC</td><td>V</td><td>level × KL15</td><td class="num">4.78</td></tr>
+</table>
+</div>
+<p>Two consequences worth remembering: each degree of front-up pitch lowers the lamp by one degree and raises LWR_DC by 20 % of the supply, and the lamp never goes above 0° or below −3°.</p>
+
+<h2>The output stage on the board</h2>
+<figure>
+<svg viewBox="0 0 1100 330" role="img" aria-label="AVAC output stage: PWM on PA2 is low-pass filtered, amplified 5.21 times and fed through 1.5 kilo-ohm to LWR_DC; the enable pin PA3 switches the stage off through transistor T8000; LWR_DC and KL15 are read back through dividers.">
+  <defs>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <rect class="bx f-hw" x="20" y="60" width="150" height="60" rx="8"/>
+  <text class="t" x="95" y="85" text-anchor="middle">PA2 · CTRL_LWR</text>
+  <text class="s" x="95" y="103" text-anchor="middle">PWM, 0 or 3.3 V, duty D</text>
+  <rect class="bx f-pan" x="215" y="60" width="170" height="60" rx="8"/>
+  <text class="t" x="300" y="85" text-anchor="middle">Two RC low-passes</text>
+  <text class="s" x="300" y="103" text-anchor="middle">46.4 kΩ / 10 nF each</text>
+  <rect class="bx f-pan" x="430" y="60" width="190" height="60" rx="8"/>
+  <text class="t" x="525" y="85" text-anchor="middle">Op-amp IC8000, × 5.21</text>
+  <text class="s" x="525" y="103" text-anchor="middle">82.5 kΩ / 19.6 kΩ, fed from KL15</text>
+  <rect class="bx f-pan" x="665" y="60" width="150" height="60" rx="8"/>
+  <text class="t" x="740" y="85" text-anchor="middle">1.5 kΩ, 22 nF</text>
+  <text class="s" x="740" y="103" text-anchor="middle">output protection</text>
+  <rect class="bx f-hw" x="860" y="60" width="220" height="60" rx="8"/>
+  <text class="t" x="970" y="85" text-anchor="middle">LWR_DC · connector pin 5</text>
+  <text class="s" x="970" y="103" text-anchor="middle">D × 17.19 V, at most KL15</text>
+  <line class="ar" x1="170" y1="90" x2="213" y2="90" marker-end="url(#ah2)"/>
+  <line class="ar" x1="385" y1="90" x2="428" y2="90" marker-end="url(#ah2)"/>
+  <text class="al" x="406" y="82" text-anchor="middle">D × 3.3 V</text>
+  <line class="ar" x1="620" y1="90" x2="663" y2="90" marker-end="url(#ah2)"/>
+  <line class="ar" x1="815" y1="90" x2="858" y2="90" marker-end="url(#ah2)"/>
+
+  <line class="ar" x1="192" y1="90" x2="192" y2="150"/>
+  <text class="al" x="192" y="166" text-anchor="middle">R8004 10 kΩ to ground:</text>
+  <text class="al" x="192" y="180" text-anchor="middle">holds the pin low, divides nothing</text>
+
+  <rect class="bx f-hw" x="20" y="230" width="150" height="60" rx="8"/>
+  <text class="t" x="95" y="255" text-anchor="middle">PA3 · EN_LWR</text>
+  <text class="s" x="95" y="273" text-anchor="middle">high = stage on</text>
+  <rect class="bx f-pan" x="430" y="230" width="190" height="60" rx="8"/>
+  <text class="t" x="525" y="255" text-anchor="middle">Transistor T8000</text>
+  <text class="s" x="525" y="273" text-anchor="middle">EN low: forces the output to 0 V</text>
+  <line class="ar" x1="170" y1="260" x2="428" y2="260" marker-end="url(#ah2)"/>
+  <text class="al" x="300" y="252" text-anchor="middle">pulled low by 10 kΩ when the pin floats</text>
+  <line class="ar" x1="525" y1="230" x2="525" y2="122" marker-end="url(#ah2)"/>
+
+  <rect class="bx f-hw" x="860" y="230" width="220" height="60" rx="8"/>
+  <text class="t" x="970" y="255" text-anchor="middle">PA15 and PB24 · ADC</text>
+  <text class="s" x="970" y="273" text-anchor="middle">LWR_DC and KL15, each ÷ 6.5</text>
+  <line class="ar" x1="970" y1="120" x2="970" y2="228" marker-end="url(#ah2)"/>
+  <text class="al" x="978" y="178">82.5 kΩ / 15 kΩ</text>
+</svg>
+<figcaption>Read from schematic sheet 80_SAVAC. The stage turns a duty cycle into D × 3.3 V × 5.21 = D × 17.19 V. CddDcm was written for 17.32 V, and its control loop removes the 0.75 % difference. The earlier note that the stage only reaches 3.05 V treated R8004 as a divider; it is a pull-down on the pin.</figcaption>
+</figure>
+<p>The levelling actuator has its own position control. The ECU does not drive a motor winding and never sees the lamp position. It sets a voltage between 20 % and 80 % of the supply and holds it for a calculated time; the actuator moves to the position that ratio stands for. What the ADC reads back is that command voltage, used to keep the ratio exact and to detect a short circuit.</p>
+
+<h2>Who runs when</h2>
+<div class="wrap">
+<table>
+  <tr><th class="num">Period</th><th>What runs</th><th>Where</th></tr>
+  <tr><td class="num">5 ms</td><td><code>BasicTask</code>: IoHwAb copies ADC results, the adapter starts the next ADC conversion, CddDcm reads the supply</td><td><code>Rte.c</code>, adapter <code>MainFunction</code></td></tr>
+  <tr><td class="num">10 ms</td><td>IMU sample is read; IARA computes the pitch</td><td><code>swc_imu</code>, <code>swc_iara</code></td></tr>
+  <tr><td class="num">20 ms</td><td>Adapter conditions the pitch; AvacStat1 and CtrlDcm are called; CddDcm adjusts the PWM towards the commanded ratio</td><td>adapter, every 4th call</td></tr>
+  <tr><td class="num">100 ms</td><td>AvacStat1 takes one pitch value and decides (it skips 4 of 5 calls)</td><td><code>AvacStat1.c</code></td></tr>
+  <tr><td class="num">2 s</td><td>A pitch change larger than 1 mrad must persist this long before the lamp moves (DPE: 10 s)</td><td><code>ILCU_LVLADP_LOAD_CHANGE_INTERVAL</code></td></tr>
+  <tr><td class="num">1 to 21 s</td><td>CddDcm keeps the output on for the time the actuator needs, then switches it off</td><td><code>CddDcmCtrl.c</code></td></tr>
+</table>
+</div>
+<p>From tilting the board to a voltage change on LWR_DC takes about 2.5 s: 0.3 s filter, 2 s hold, a few cycles of hand-over.</p>
+
+<h2>The three state machines</h2>
+<figure>
+<svg viewBox="0 0 1100 300" role="img" aria-label="Three small state machines: pitch quality in the adapter, phase in CtrlDcm, and output state in CddDcm.">
+  <defs>
+    <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <!-- A: pitch quality -->
+  <text class="row" x="20" y="22">ADAPTER · PITCH QUALITY</text>
+  <rect class="bx f-lvl" x="20" y="50" width="100" height="44" rx="22"/><text class="t" x="70" y="77" text-anchor="middle">INIT</text>
+  <rect class="bx f-lvl" x="230" y="50" width="100" height="44" rx="22"/><text class="t" x="280" y="77" text-anchor="middle">VALID</text>
+  <rect class="bx f-lvl" x="125" y="210" width="110" height="44" rx="22"/><text class="t" x="180" y="237" text-anchor="middle">INVALID</text>
+  <line class="ar" x1="120" y1="72" x2="228" y2="72" marker-end="url(#ah3)"/>
+  <text class="al" x="174" y="50" text-anchor="middle">first sample</text><text class="al" x="174" y="64" text-anchor="middle">+ 1 s</text>
+  <line class="ar" x1="70" y1="94" x2="150" y2="208" marker-end="url(#ah3)"/>
+  <text class="al" x="52" y="150" text-anchor="middle">5 s without</text><text class="al" x="52" y="164" text-anchor="middle">a sample</text>
+  <line class="ar" x1="290" y1="94" x2="222" y2="208" marker-end="url(#ah3)"/>
+  <text class="al" x="306" y="150" text-anchor="middle">500 ms</text><text class="al" x="306" y="164" text-anchor="middle">dropout</text>
+  <line class="ar" x1="200" y1="210" x2="262" y2="96" marker-end="url(#ah3)"/>
+  <text class="al" x="212" y="186" text-anchor="middle">sample</text>
+
+  <!-- B: CtrlDcm phase -->
+  <text class="row" x="400" y="22">CtrlDcm · PHASE</text>
+  <rect class="bx f-lvl" x="400" y="50" width="90" height="44" rx="22"/><text class="t" x="445" y="77" text-anchor="middle">Init</text>
+  <rect class="bx f-lvl" x="610" y="50" width="90" height="44" rx="22"/><text class="t" x="655" y="77" text-anchor="middle">Adj</text>
+  <rect class="bx f-lvl" x="505" y="210" width="90" height="44" rx="22"/><text class="t" x="550" y="237" text-anchor="middle">Fail</text>
+  <line class="ar" x1="490" y1="72" x2="608" y2="72" marker-end="url(#ah3)"/>
+  <text class="al" x="549" y="50" text-anchor="middle">no fault,</text><text class="al" x="549" y="64" text-anchor="middle">20 ms after start</text>
+  <line class="ar" x1="665" y1="94" x2="585" y2="208" marker-end="url(#ah3)"/>
+  <text class="al" x="690" y="150" text-anchor="middle">pitch INVALID,</text><text class="al" x="690" y="164" text-anchor="middle">or short for 2 s</text>
+  <line class="ar" x1="560" y1="210" x2="632" y2="96" marker-end="url(#ah3)"/>
+  <text class="al" x="548" y="150" text-anchor="middle">fault gone;</text><text class="al" x="548" y="164" text-anchor="middle">target stays</text><text class="al" x="548" y="178" text-anchor="middle">stopped</text>
+  <line class="ar" x1="445" y1="94" x2="520" y2="208" marker-end="url(#ah3)"/>
+
+  <!-- C: CddDcm -->
+  <text class="row" x="770" y="22">CddDcm · OUTPUT</text>
+  <rect class="bx f-lvl" x="770" y="50" width="110" height="44" rx="22"/><text class="t" x="825" y="77" text-anchor="middle">Off</text>
+  <rect class="bx f-lvl" x="970" y="50" width="110" height="44" rx="22"/><text class="t" x="1025" y="77" text-anchor="middle">Moving</text>
+  <rect class="bx f-lvl" x="770" y="210" width="110" height="44" rx="22"/><text class="t" x="825" y="237" text-anchor="middle">Locked</text>
+  <rect class="bx f-lvl" x="970" y="210" width="110" height="44" rx="22"/><text class="t" x="1025" y="237" text-anchor="middle">Error off</text>
+  <line class="ar" x1="880" y1="64" x2="968" y2="64" marker-end="url(#ah3)"/>
+  <text class="al" x="924" y="54" text-anchor="middle">target ±5 ‰</text>
+  <line class="ar" x1="970" y1="82" x2="882" y2="82" marker-end="url(#ah3)"/>
+  <text class="al" x="924" y="98" text-anchor="middle">time elapsed</text>
+  <line class="ar" x1="812" y1="94" x2="812" y2="208" marker-end="url(#ah3)"/>
+  <line class="ar" x1="838" y1="210" x2="838" y2="96" marker-end="url(#ah3)"/>
+  <text class="al" x="770" y="150" text-anchor="middle">KL15 out of</text><text class="al" x="770" y="164" text-anchor="middle">8.6…17.7 V</text>
+  <text class="al" x="878" y="150" text-anchor="middle">back in</text><text class="al" x="878" y="164" text-anchor="middle">range</text>
+  <line class="ar" x1="1025" y1="94" x2="1025" y2="208" marker-end="url(#ah3)"/>
+  <text class="al" x="1060" y="150" text-anchor="middle">short for</text><text class="al" x="1060" y="164" text-anchor="middle">400 ms</text>
+</svg>
+<figcaption>Left: the adapter decides what AvacStat1 is told about the pitch. Only INVALID is treated as a fault. Middle: CtrlDcm levels only in Adj. After Fail it returns to Adj but keeps the target stopped until an ignition cycle, which the demo does not have, so a real fault needs a reset. Right: CddDcm powers the output only while moving.</figcaption>
+</figure>
+
+<h2>Working scenarios</h2>
+<p>Each scenario lists what you should see, with the debugger variable or the pin to look at. Voltages are for a 12.0 V supply. Scenarios 1 to 7 were run in the host harness; scenario 8 is a procedure.</p>
+
+<div class="scn">
+<h3>1 · Power-on on level ground</h3>
+<p class="sum">The lamp is driven to its 0° position and the output switches off again. Keep the board still for the first two seconds: its attitude then becomes the zero reference.</p>
+<div class="wrap"><table>
+  <tr><th class="num">Time</th><th>What happens</th><th>Look at</th></tr>
+  <tr><td class="num">0</td><td>Adapter init: enable low, PWM at 0, DPE defaults loaded</td><td>PA3 low, LWR_DC 0 V</td></tr>
+  <tr><td class="num">20 ms</td><td>CtrlDcm reaches Adj. Pitch quality is INIT, so AvacStat1 waits; nothing is treated as a fault.</td><td><code>ILCU_LvlAdp_CtrlDcmStatus.eASL_PHASE</code> = 1</td></tr>
+  <tr><td class="num">≈ 40 ms</td><td>First supply reading arrives; CddDcm unlocks and starts the first move to 0°</td><td>PA3 high, LWR_DC = 2.40 V</td></tr>
+  <tr><td class="num">IMU ready + 1 s</td><td>Zero reference taken; pitch becomes VALID with value 0</td><td><code>ILCU_LvlAdp_PitchQty</code> = 1, <code>ILCU_LvlAdp_PitchOut</code> = 0</td></tr>
+  <tr><td class="num">≈ 21 s</td><td>First move ends (position was unknown after reset, so CddDcm allows the longest time); output off</td><td>PA3 low, LWR_DC 0 V</td></tr>
+</table></div>
+</div>
+
+<div class="scn">
+<h3>2 · Tilt front-up by 1°</h3>
+<p class="sum">The demonstration case. The beam is lowered by 1° about 2.5 s after the tilt.</p>
+<div class="wrap"><table>
+  <tr><th class="num">Time</th><th>What happens</th><th>Look at</th></tr>
+  <tr><td class="num">0</td><td>Board tilted. IARA pitch goes to 100</td><td><code>Rte_Iara_TargetPitch_cdeg</code> = 100</td></tr>
+  <tr><td class="num">≈ 1 s</td><td>Adapter output settles at 174</td><td><code>ILCU_LvlAdp_PitchOut</code> = 174</td></tr>
+  <tr><td class="num">≈ 2.3 s</td><td>Change has held for 2 s: AvacStat1 sets the lamp angle to −1.00°</td><td><code>ILCU_LvlAdp_AvacStat1Out.Position[0].Ver</code> = −100</td></tr>
+  <tr><td class="num">+ 20 ms</td><td>CtrlDcm passes the target; CddDcm commands 40 % of the supply</td><td><code>ILCU_LvlAdp_DcmTarget.sDcmTarget.nPosition</code> = −100; LWR_DC = 4.78 V</td></tr>
+  <tr><td class="num">+ ≈ 7 s</td><td>Move time elapsed; output off, actuator holds its position</td><td>PA3 low</td></tr>
+</table></div>
+<p>Tilting back to level does the same in reverse: after 2 s the target returns to 0 and LWR_DC goes to 2.40 V for the move.</p>
+</div>
+
+<div class="scn">
+<h3>3 · Tilt further than 3°</h3>
+<p class="sum">The lamp stops at −3°. Three limits agree on that value.</p>
+<div class="wrap"><table>
+  <tr><th>Limit</th><th>Where</th><th>Effect at +4°</th></tr>
+  <tr><td>IARA saturates its pitch at ±3°</td><td>library parameter</td><td>source reports 300, not 400</td></tr>
+  <tr><td>AvacStat1 accepts 0 to 5°</td><td><code>AvacStat1.c</code></td><td>would output −400</td></tr>
+  <tr><td>CtrlDcm clamps the target to −3°…0°</td><td>coding value −300</td><td>target −300, LWR_DC = 9.61 V (80 %)</td></tr>
+</table></div>
+</div>
+
+<div class="scn">
+<h3>4 · Tilt nose-down</h3>
+<p class="sum">Nothing moves, by design. Static levelling only lowers the beam; a car that dips at the front already points its beam down. AvacStat1 clamps a negative car angle to 0, so the lamp stays at 0° and LWR_DC stays at 2.40 V during a move. For a demo, always tilt front-up.</p>
+</div>
+
+<div class="scn">
+<h3>5 · IMU slow to start, or not there at all</h3>
+<div class="wrap"><table>
+  <tr><th>Case</th><th>What happens</th><th>Look at</th></tr>
+  <tr><td>IMU ready after 3 s</td><td>Quality stays INIT, CtrlDcm stays in Adj, the lamp sits at 0°. Levelling starts normally once samples arrive.</td><td><code>ILCU_LvlAdp_PitchQty</code> 2 → 1</td></tr>
+  <tr><td>No sample for 5 s</td><td>Quality becomes INVALID. CtrlDcm goes to Fail and commands the coded safety position −0.32°. The lamp is driven there (3.16 V) and stays until reset.</td><td><code>eASL_PHASE</code> = 2, target −32</td></tr>
+  <tr><td>Dropout shorter than 500 ms while running</td><td>Last angle is held; no fault.</td><td>quality stays 1</td></tr>
+  <tr><td>Dropout longer than 500 ms</td><td>Fail. When samples return, CtrlDcm goes back to Adj but the target stays stopped. Reset to continue.</td><td><code>sDcmTarget.boStop</code> = 1</td></tr>
+</table></div>
+</div>
+
+<div class="scn">
+<h3>6 · Supply voltage leaves 8.6 to 17.7 V</h3>
+<p class="sum">CddDcm switches the output off and locks. When the supply returns it re-drives the last target. Because the output is a ratio of the supply, the same lamp angle gives 7.20 V at 12 V and 9.01 V at 15 V.</p>
+</div>
+
+<div class="scn">
+<h3>7 · LWR_DC shorted to ground</h3>
+<p class="sum">During a move the read-back stays below 6 % of the supply. After 400 ms of a 500 ms window CddDcm reports <code>DCMotor_SC_GND</code> and switches off; 2 s later CtrlDcm goes to Fail. Look at <code>ILCU_LvlAdp_DemStatus[23]</code> = 3.</p>
+</div>
+
+<div class="scn">
+<h3>8 · Bench test without the IMU</h3>
+<p class="sum">Proves the chain and the hardware path before the pitch source works. In the debugger set <code>ILCU_LvlAdp_BenchPitch_0p1mrad</code> to a value and <code>ILCU_LvlAdp_BenchPitchEnable</code> to 1.</p>
+<div class="wrap"><table>
+  <tr><th class="num">Bench value</th><th class="num">Means</th><th class="num">Ver</th><th class="num">LWR_DC / KL15</th><th class="num">at 12 V</th></tr>
+  <tr><td class="num">0</td><td class="num">0°</td><td class="num">0</td><td class="num">0.200</td><td class="num">2.40 V</td></tr>
+  <tr><td class="num">174</td><td class="num">1°</td><td class="num">−100</td><td class="num">0.400</td><td class="num">4.80 V</td></tr>
+  <tr><td class="num">349</td><td class="num">2°</td><td class="num">−200</td><td class="num">0.600</td><td class="num">7.20 V</td></tr>
+  <tr><td class="num">523</td><td class="num">3°</td><td class="num">−300</td><td class="num">0.800</td><td class="num">9.60 V</td></tr>
+</table></div>
+<p>Measure LWR_DC with a voltmeter while the output is on. Writing 1 to <code>ILCU_LvlAdp_CalibRequest</code> makes the current attitude the new zero.</p>
+</div>
+
+<h2>What still has to happen</h2>
+<div class="wrap">
+<table>
+  <tr><th>Owner</th><th>Change</th><th>Without it</th></tr>
+  <tr><td>Integration</td><td>Three lines in <code>Rte.c</code>: include, <code>ILCU_LevellingAdapter_Init()</code>, <code>ILCU_LevellingAdapter_MainFunction()</code></td><td>the chain is not in the image</td></tr>
+  <tr><td>IMU</td><td>Remove the motor output from <code>swc_imu</code></td><td>two modules fight over the pins</td></tr>
+  <tr><td>IMU</td><td>Read the IMU sample once per cycle and give it to both SWCs</td><td>pitch stays 0, lamp never moves</td></tr>
+  <tr><td>IMU</td><td>Confirm pitch sign and sensor mounting; export a validity flag</td><td>lamp may move the wrong way; a stalled fusion goes unnoticed</td></tr>
+  <tr><td>BSW</td><td>Enable pin low and PWM duty 0 at start-up</td><td>the output is live for a moment at every power-on</td></tr>
+  <tr><td>BSW</td><td>Fix the IoHwAb analog table and start the ADC there</td><td>nothing breaks: the adapter works around both today</td></tr>
+  <tr><td>Build</td><td>Include the make fragments</td><td>nothing compiles</td></tr>
+</table>
+</div>
+<p>Exact patches for each row are in Appendix A of the report.</p>
+
+<h2>Variables worth watching</h2>
+<div class="wrap">
+<table>
+  <tr><th>Variable</th><th>Meaning</th><th>Healthy value</th></tr>
+  <tr><td><code>ILCU_LvlAdp_TimeUs</code></td><td>chain is being called</td><td>grows by 5000 every 5 ms</td></tr>
+  <tr><td><code>ILCU_LvlAdp_PitchQty</code></td><td>pitch quality</td><td>2 (INIT) at start, then 1 (VALID); 3 is INVALID</td></tr>
+  <tr><td><code>ILCU_LvlAdp_PitchOut</code></td><td>pitch given to AvacStat1, 0.1 mrad</td><td>about 175 per degree, positive front-up</td></tr>
+  <tr><td><code>ILCU_LvlAdp_AvacStat1Out.Position[0].Ver</code></td><td>lamp angle, 0.01°</td><td>0 to −300</td></tr>
+  <tr><td><code>ILCU_LvlAdp_CtrlDcmStatus.eASL_PHASE</code></td><td>CtrlDcm phase</td><td>1 (Adj); 2 is Fail</td></tr>
+  <tr><td><code>ILCU_LvlAdp_DcmTarget.sDcmTarget</code></td><td>target and stop flag for CddDcm</td><td><code>boStop</code> = 0</td></tr>
+  <tr><td><code>ILCU_LvlAdp_DemStatus[23]</code>, <code>[25]</code></td><td>short to ground, short to supply</td><td>2 (passed); 3 is failed</td></tr>
+</table>
+</div>
+
+</main>
+</body>
+</html>

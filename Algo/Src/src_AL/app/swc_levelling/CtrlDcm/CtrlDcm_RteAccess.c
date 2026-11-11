@@ -67,7 +67,7 @@ Std_ReturnType CtrlDcm_RteAccess_Read_EcuSide(teCtrlDcm_MountingSide* eEcuSide)
 uint16 CtrlDcm_RteAccess_ReadSpeed(boolean * boSpeedInvalid)
 {
   tsRte_SysMon_VehicleSpeed                 sSpeedMsg;
-  uint16 unCtrlDcmSpeed;
+  static uint16 unCtrlDcmSpeed = 0u; /* ILCU_PORT: was read uninitialised on the keep-previous path (UB) */
 
   //receive bb messages
   (void)Rte_Read_SysMon_VehicleSpeed(&sSpeedMsg);  
@@ -102,7 +102,7 @@ uint16 CtrlDcm_RteAccess_ReadSpeed(boolean * boSpeedInvalid)
 uint8 CtrlDcm_RteAccess_ReadVehicleElectricState(void)
 {
   tsRte_SysMon_VehNetState                 sVechStateMsg;
-  uint8 ucCtrlDcmVechElectricState;
+  static uint8 ucCtrlDcmVechElectricState = (uint8)eInvalid; /* ILCU_PORT: was read uninitialised on the keep-previous path (UB) */
 
   //receive bb messages
   (void)Rte_Read_SysMon_VehNetState(&sVechStateMsg);
@@ -135,7 +135,7 @@ uint8 CtrlDcm_RteAccess_ReadVehicleElectricState(void)
 uint8 CtrlDcm_RteAccess_ReadVESMainState(void)
 {
   tsRte_SysMon_VehNetState                 sVechStateMsg;
-  uint8 ucCtrlDcmVESMainState;
+  static uint8 ucCtrlDcmVESMainState = (uint8)VESState_Invalid; /* ILCU_PORT: was read uninitialised on the keep-previous path (UB) */
 
   //receive bb messages
   (void)Rte_Read_SysMon_VehNetState(&sVechStateMsg);

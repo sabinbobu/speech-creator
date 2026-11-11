@@ -863,8 +863,8 @@ STATIC_AL boolean CtrlDcm_Transition_Init_To_Adj(void)
 //-----------------------------------------------------------------------------
   STATIC_AL   void CtrlDcm_HandleFailState(void)
   {
-    teCtrlDcm_FailStateHandling eFailStateLeft;
-    teCtrlDcm_FailStateHandling eFailStateRight;
+    static teCtrlDcm_FailStateHandling eFailStateLeft  = CtrlDcm_eFreeze; /* ILCU_PORT: was read uninitialised on the keep-previous path (UB) */
+    static teCtrlDcm_FailStateHandling eFailStateRight = CtrlDcm_eFreeze; /* ILCU_PORT: was read uninitialised on the keep-previous path (UB) */
     boolean boLvlFuncHeadlampFaultL;
     boolean boLvlFuncHeadlampFaultR;
     boolean boPowertrainActive         = CtrlDcm_RetPowerTrainActive();
@@ -1275,7 +1275,7 @@ STATIC_AL void CtrlDcm_DetectSlaveSubMode(void)
 //-----------------------------------------------------------------------------
   STATIC_AL   void CtrlDcm_HandleFailState_Slave(void)
   {
-    teCtrlDcm_FailStateHandling eFailState;
+    static teCtrlDcm_FailStateHandling eFailState = CtrlDcm_eFreeze; /* ILCU_PORT: was read uninitialised on the keep-previous path (UB) */
     boolean boLvlFuncHeadlampFault;
     boolean boPowertrainActive = CtrlDcm_RetPowerTrainActive();
     boolean boLvlAdjFuncFault  = CtrlDcm_ReturnboSlaveLvlAdjFuncFault();

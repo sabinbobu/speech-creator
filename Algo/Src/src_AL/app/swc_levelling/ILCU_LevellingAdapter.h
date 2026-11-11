@@ -35,14 +35,70 @@ void ILCU_LevellingAdapter_MainFunction(void);
 
 /* Pitch input for AvacStat1 (replaces DPE Pitch_Angle).
  * Unit 0.1 mrad, front side up = positive (DPE tPitch0 convention).
- * E_OK = valid, E_NOT_OK = invalid (AvacStat1 freezes, CtrlDcm -> Fail).
- * STUB in ILCU_LevellingAdapter.c returns ILCU_LVLADP_STUB_PITCH_0P1MRAD.
- * IMU plug-in without touching the ported code or this adapter: define
+ * E_OK = sample usable, E_NOT_OK = no usable sample this cycle. The adapter
+ * turns this into the DPE signal quality: SIG_INIT until the first usable
+ * sample, SIG_INVALID only after a timeout (section 1a). A single E_NOT_OK
+ * therefore no longer sends CtrlDcm to Fail.
+ * Default implementation (ILCU_LevellingAdapter.c): IARA pitch from
+ * Rte_Iara_TargetPitch_cdeg, usable once Rte_ImuInitResult == E_OK.
+ * To supply the pitch from another module, define
  * ILCU_LVLADP_EXTERNAL_PITCH_SOURCE in the build and implement this function
- * in the IMU module (swc_imu gives Pitch_cdeg: 1 cdeg = 1.745 x 0.1 mrad). */
+ * there (1 cdeg = 1.745 x 0.1 mrad). */
 Std_ReturnType ILCU_LevellingAdapter_GetPitchAngle(sint16* Pitch_0p1mrad);
 
-#define ILCU_LVLADP_STUB_PITCH_0P1MRAD    (0)
+/*============================================================================*/
+/* 1a. Integration configuration (each value can be overridden in C_DEFINES)  */
+/*============================================================================*/
+/* --- Pitch conditioning, run every 20 ms before AvacStat1 ------------------*/
+#ifndef ILCU_LVLADP_PITCH_SIGN
+#define ILCU_LVLADP_PITCH_SIGN                (1)      /* -1 if the source reads front up as negative */
+#endif
+#ifndef ILCU_LVLADP_PITCH_FILTER_SHIFT
+#define ILCU_LVLADP_PITCH_FILTER_SHIFT        (4u)     /* first-order low pass, 2^4 x 20 ms = 320 ms; 0 = off */
+#endif
+#ifndef ILCU_LVLADP_PITCH_STARTUP_TIMEOUT
+#define ILCU_LVLADP_PITCH_STARTUP_TIMEOUT     (250u)   /* x 20 ms = 5 s without a first sample -> SIG_INVALID */
+#endif
+#ifndef ILCU_LVLADP_PITCH_INVALID_DEBOUNCE
+#define ILCU_LVLADP_PITCH_INVALID_DEBOUNCE    (25u)    /* x 20 ms = 500 ms of dropout is held before SIG_INVALID */
+#endif
+#ifndef ILCU_LVLADP_PITCH_AUTO_ZERO
+#define ILCU_LVLADP_PITCH_AUTO_ZERO           STD_ON   /* demo: the attitude at power-on is the zero reference */
+#endif
+#ifndef ILCU_LVLADP_PITCH_ZERO_SETTLE
+#define ILCU_LVLADP_PITCH_ZERO_SETTLE         (50u)    /* x 20 ms = 1 s of usable samples before the zero is taken */
+#endif
+
+/* --- KL15 and LWR feedback -------------------------------------------------*/
+/* Raw ADC counts are scaled here: the Al077a IoHwAb analog table reads KL15
+ * from a result slot the ADC never writes and converts the LWR feedback for
+ * the wrong divider (PORT_CHANGES.md 11). Both inputs use 82.5k/15k and the
+ * 3.3 V reference (Al077HardwareSchematic.md 6). */
+#ifndef ILCU_LVLADP_KL15_RAW_CHID
+#define ILCU_LVLADP_KL15_RAW_CHID             IOHWAB_CHID_HSS_SENSE_1_2  /* ADC group 0 slot 0 = ADC0 ch5 (PB24) */
+#endif
+#ifndef ILCU_LVLADP_LWRFB_RAW_CHID
+#define ILCU_LVLADP_LWRFB_RAW_CHID            IOHWAB_CHID_ADIN_3         /* ADC group 1 slot 0 = ADC1 ch0 (PA15) */
+#endif
+#ifndef ILCU_LVLADP_ADC_FULLSCALE_MV
+#define ILCU_LVLADP_ADC_FULLSCALE_MV          (21450u) /* 3300 mV x (82.5k + 15k) / 15k */
+#endif
+#ifndef ILCU_LVLADP_ADC_MAX_COUNTS
+#define ILCU_LVLADP_ADC_MAX_COUNTS            (4095u)  /* 12 bit, right aligned */
+#endif
+#ifndef ILCU_LVLADP_START_ADC_GROUPS
+#define ILCU_LVLADP_START_ADC_GROUPS          STD_ON   /* IoHwAb only copies the result buffers; nothing else starts the groups */
+#endif
+
+/* --- Demo timing -----------------------------------------------------------*/
+#ifndef ILCU_LVLADP_LOAD_CHANGE_INTERVAL
+#define ILCU_LVLADP_LOAD_CHANGE_INTERVAL      (20)     /* x 100 ms = 2 s hold before a pitch change moves the lamp; DPE: 100 */
+#endif
+
+/* --- Debugger / bench hooks (RAM only) -------------------------------------*/
+extern volatile uint8   ILCU_LvlAdp_BenchPitchEnable;    /* 1: feed ILCU_LvlAdp_BenchPitch_0p1mrad to AvacStat1, unfiltered */
+extern volatile sint16  ILCU_LvlAdp_BenchPitch_0p1mrad;
+extern volatile uint8   ILCU_LvlAdp_CalibRequest;        /* write 1: the current attitude becomes the zero reference */
 
 /*============================================================================*/
 /* 2. DPE build switches (were in Cfg/Cfg.h)                                  */

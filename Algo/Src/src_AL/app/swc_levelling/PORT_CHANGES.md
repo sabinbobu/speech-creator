@@ -109,6 +109,7 @@ Why each class:
 ## 6. Known issues carried over (not fixed, by decision or by rule)
 
 ### 6.1 Hardware / configuration — [verify on Al077a HW]
+> **Superseded 2026-11-11, see §11.** F3 is wrong (the stage reaches about 17.2 V, no hardware change needed) and F7 is restated (KL15 reads 0 mV; worked around in the adapter).
 - **F3, quantified: CddDcm's output stage is DPE hardware.**
   - CddDcm regulates LWR_DC as a ‰ ratio of KL15, with divisor 3.485 × 4970 mV (`CddDcmHal.c:146-154`).
   - The ILCU stage gives ≈ D × 3.05 V absolute (`Al077HardwareSchematic.md` §7).
@@ -197,3 +198,54 @@ CddDcm now sits in ILCU's CDD folder with the same layout as `src_AL/cdd/CddAsm3
 - `CddDcm_030_Flags.gmk` adds `Api`, `Gen` and `Cfg` (CddAsm330lhh adds only `Api`). `CddDcmHal.c` includes its own headers with angle brackets, which never search the source's folder.
 - A per-project copy of `CddDcm_Cfg.h` could later go to `config_AL/Al/Al077a/cdd/CddDcm/Cfg/`, as CddAsm330lhh does. It is not needed now.
 - Verification re-run: §7 item 5.
+
+### 2026-11-11 — §11 Adapter made demo-ready; findings corrected against the schematic
+
+Scope: only files under `swc_levelling/`. `Rte.c`, `swc_imu`, `swc_iara`, IoHwAb and MCAL configuration are unchanged; what they need is listed as patches in `LEVELLING_PORT_REPORT.md` (project root).
+
+**Corrections to earlier sections**
+
+| Earlier statement | Correct |
+|---|---|
+| §6.1 F3: the ILCU stage gives D × 3.05 V, hardware change needed | **Wrong.** On schematic sheet 80_SAVAC, R8004 (10 k) sits on the CTRL_LWR pin, before R8001: a pull-down, not a divider. IN+ = D × 3.3 V, gain 1 + 82.5k/19.6k = 5.21, so LWR_DC = D × 17.19 V. CddDcm assumes 17.32 V; its 20 ms loop removes the 0.75 % gap. No hardware change. |
+| §6.1 F7: VBAT read from "ADC0 ch4" | `IOHWAB_CHID_VBAT` reads result slot 4 of ADC group 0, which converts 2 channels. The value is always 0 mV, so CddDcm stays locked. Nothing starts the ADC groups either. |
+| §5 S1: pitch is a fixed 0 | Replaced, see below. |
+| §6.3: recommendation to initialise the CtrlDcm locals | Done, see below. |
+
+**Changes**
+
+| File | Change |
+|---|---|
+| `ILCU_LevellingAdapter.h` | New section 1a: `#ifndef` configuration macros (pitch sign, filter, timeouts, auto-zero, analog channel IDs and scale, ADC start, demo load-change interval) and three debugger hooks. `ILCU_LVLADP_STUB_PITCH_0P1MRAD` removed. |
+| `ILCU_LevellingAdapter.c` | (1) Default pitch source reads `Rte_Iara_TargetPitch_cdeg`, × 349/200 to 0.1 mrad, usable once `Rte_ImuInitResult == E_OK`. (2) `ILCU_LvlAdp_PitchCycle()` every 20 ms: sign, low pass, zero reference, quality `SIG_INIT` → `SIG_VALID`, `SIG_INVALID` only after 5 s without a first sample or 500 ms of dropout. (3) KL15 and LWR feedback read with `IoHwAb_AnalogReadRaw` and scaled × 6.5 in the adapter. (4) Both ADC groups started every 5 ms when not busy. (5) `Init` drives EN_LWR low and idles the PWM first; `MainFunction` returns until `Init` ran. (6) Load-change interval set to 2 s after the DPE defaults load. |
+| `CtrlDcm/CtrlDcmSm.c` | `eFailStateLeft`, `eFailStateRight` (HandleFailState) and `eFailState` (HandleFailState_Slave) are `static`, initialised to `CtrlDcm_eFreeze`. Reverses Q3 for these lines. |
+| `CtrlDcm/CtrlDcm_RteAccess.c` | `unCtrlDcmSpeed`, `ucCtrlDcmVechElectricState`, `ucCtrlDcmVESMainState` are `static` with a safe initial value. |
+| `Make/IlcuLevelling_030_Flags.gmk` | `src_AL/rte` added to the include paths (`Rte_Imu.h`, `Rte_Iara.h`). |
+
+**Stub table (§5) after this change**
+
+| # | Was | Now |
+|---|---|---|
+| S1 | pitch fixed 0 | IARA pitch by default; `ILCU_LvlAdp_BenchPitchEnable` / `ILCU_LvlAdp_BenchPitch_0p1mrad` feed a value from the debugger; `ILCU_LVLADP_EXTERNAL_PITCH_SOURCE` still replaces the source. Reads 0 until the IMU owner fixes the sample starvation of `swc_iara`. |
+| S16 (new) | — | Zero reference is RAM only: taken 1 s after the first usable sample (`ILCU_LVLADP_PITCH_AUTO_ZERO`) or on `ILCU_LvlAdp_CalibRequest = 1`. Demo behaviour, not a vehicle calibration. |
+| S17 (new) | — | The adapter starts the ADC groups and scales raw counts itself. Remove (`ILCU_LVLADP_START_ADC_GROUPS STD_OFF`, channel ID macros) once IoHwAb does both. |
+| S4 | ignition always on | unchanged: after a real pitch fault the lamp stays stopped until reset. |
+
+**Verification (host, 2026-11-11)**
+
+- Warning check, clang `--target=thumbv6m-none-eabi -mcpu=cortex-m0plus -std=gnu17 -fshort-enums -ffreestanding -Os -fno-inline-functions -Wall -fsyntax-only`, 13 sources, stand-in headers for the TI MCAL: 0 errors, 13 warnings, none in the adapter. The 7 uninitialised-variable warnings of §6.4 are gone; the 13 left are the unused-code warnings of §6.4.
+- Behaviour harness: the chain, the adapter, the real Al077a IoHwAb configuration and the platform IoHwAb core (copy of 2026-11-06), with a model of the real stage (D × 17.19 V, × 6.5 dividers). 8 scenarios pass at `-O0` and `-O2` with identical transcripts:
+
+| Scenario | Result |
+|---|---|
+| Pitch 0 / +1° / +2° / +3° / +4° / −1° at 12 V | Ver 0 / −100 / −200 / −300 / −400 / 0; target clamps at −300; LWR_DC 2406 / 4778 / 7202 / 9609 / 9609 / 2406 mV |
+| IMU ready after 3 s | quality `SIG_INIT`, phase Adj, no Fail latch; levels normally afterwards |
+| IMU never ready | `SIG_INVALID` after 5 s, phase Fail, target −32, lamp at 3162 mV |
+| KL15 7 V, then 15 V | output off; back at 9007 mV (600 ‰ of 15 V) |
+| Dropout 300 ms, then 1 s | held; then Fail; after recovery Adj with the target stopped |
+| IoHwAb path vs adapter | `IoHwAb_VoltageKL30_Read` = 0 mV, adapter 11995 mV; IoHwAb feedback 5457 mV for 7202 mV at the pin, adapter 7197 mV |
+| Bench override 349 | Ver −200, 7202 mV |
+| LWR_DC shorted to ground | `DCMotor_SC_GND` FAILED, phase Fail, output off |
+
+- Control: with `ILCU_LVLADP_START_ADC_GROUPS STD_OFF` KL15 reads 0 mV and the output never enables.
+- Not run: Keil/armclang build, TI MCAL, the board. `ADC_BUSY` and the PWM restart after `Pwm_SetOutputToIdle` are UNVERIFIED against the TI MCAL.

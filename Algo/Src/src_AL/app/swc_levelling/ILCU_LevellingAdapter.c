@@ -16,7 +16,11 @@
 
 /* ILCU headers first, so ILCU definitions win over the adapter's guarded ones */
 #include "IoHwAb.h"
-#include "IoHwAb_Internals.h"   /* CTRL_LWR PWM and LWR feedback have no public IoHwAb wrapper */
+#include "IoHwAb_Internals.h"   /* CTRL_LWR idle and the raw analog read have no public IoHwAb wrapper */
+#ifndef ILCU_LVLADP_EXTERNAL_PITCH_SOURCE
+#include "Rte_Imu.h"            /* Rte_ImuInitResult: default pitch source is usable once the IMU is up */
+#include "Rte_Iara.h"           /* Rte_Iara_TargetPitch_cdeg: default pitch source */
+#endif
 #include "ILCU_LevellingAdapter.h"
 #include "AvacStat1Init.h"      /* DPE NvM defaults of AvacStat1 */
 #include "CddDcm.h"             /* DPE NvM default of CddDcm */
@@ -28,6 +32,12 @@
 #define ILCU_LVLADP_20MS_DIVIDER        4u      /* 4 x 5 ms = DPE 20 ms slot */
 #define ILCU_LVLADP_DEM_EVENT_MAX       32u     /* above highest event id used (29) */
 #define ILCU_LVLADP_NM_NORMAL_MODE      ((NM_ModeType)0x01u)   /* any value != LIMP_HOME_MODE */
+
+/* 1 cdeg = 0.01 deg = 1.7453 x 0.1 mrad */
+#define ILCU_LVLADP_CDEG_TO_0P1MRAD_NUM (349)
+#define ILCU_LVLADP_CDEG_TO_0P1MRAD_DEN (200)
+#define ILCU_LVLADP_PITCH_CDEG_LIMIT    (18000)   /* +-180 deg: keeps the converted value inside sint16 */
+#define ILCU_LVLADP_PITCH_FILTER_DIV    ((sint32)1 << ILCU_LVLADP_PITCH_FILTER_SHIFT)
 
 /*============================================================================*/
 /* NvM RAM blocks (STUB: never persisted)                                     */
@@ -64,18 +74,151 @@ static tsRte_DcMotorRoutineControl  ILCU_LvlAdp_RoutineControl  =
 static uint8   ILCU_LvlAdp_DemStatus[ILCU_LVLADP_DEM_EVENT_MAX];  /* debug visible */
 static TIMER   ILCU_LvlAdp_TimeUs;
 static uint8   ILCU_LvlAdp_TickCnt;
-static sint16  ILCU_LvlAdp_LastPitch;
+static boolean ILCU_LvlAdp_InitDone = FALSE;
+
+/* Bench hooks, see ILCU_LevellingAdapter.h */
+volatile uint8   ILCU_LvlAdp_BenchPitchEnable;
+volatile sint16  ILCU_LvlAdp_BenchPitch_0p1mrad;
+volatile uint8   ILCU_LvlAdp_CalibRequest;
+
+/* Pitch conditioning state */
+static sint32        ILCU_LvlAdp_PitchFilt;       /* filtered source pitch x ILCU_LVLADP_PITCH_FILTER_DIV */
+static sint32        ILCU_LvlAdp_PitchZero;       /* zero reference [0.1 mrad] */
+static sint16        ILCU_LvlAdp_PitchOut;        /* angle handed to AvacStat1 [0.1 mrad], debug visible */
+static teRte_SigQty  ILCU_LvlAdp_PitchQty;        /* quality handed to AvacStat1, debug visible */
+static uint16        ILCU_LvlAdp_PitchGoodCnt;    /* usable samples so far, saturating */
+static uint16        ILCU_LvlAdp_PitchBadCnt;     /* consecutive cycles without a usable sample */
+static boolean       ILCU_LvlAdp_PitchRunning;    /* zero reference taken, output released */
+
+/*============================================================================*/
+/* Local functions                                                            */
+/*============================================================================*/
+/* Scaled voltage of one 82.5k/15k divider input, from the raw ADC counts. */
+static Std_ReturnType ILCU_LvlAdp_ReadDivider_mV(IoHwAb_AnalogChannelIdType ChId, uint32* Value_mV)
+{
+  IoHwAb_RawValueType Raw    = 0u;
+  Std_ReturnType      RetVal = IoHwAb_AnalogReadRaw(ChId, &Raw);
+
+  if (RetVal == E_OK)
+  {
+    *Value_mV = (((uint32)Raw * ILCU_LVLADP_ADC_FULLSCALE_MV) + (ILCU_LVLADP_ADC_MAX_COUNTS / 2u)) / ILCU_LVLADP_ADC_MAX_COUNTS;
+  }
+  else
+  {
+    *Value_mV = 0u;
+  }
+  return RetVal;
+}
+
+#if (ILCU_LVLADP_START_ADC_GROUPS == STD_ON)
+static void ILCU_LvlAdp_StartAdc(void)
+{
+  /* Both groups are one-shot and software triggered (Adc_PBcfg.c). IoHwAb_MainFunction
+   * only copies their result buffers, so they are restarted here. CddDcm sees the
+   * result one 5 ms cycle later. */
+  if (Adc_GetGroupStatus(ADC_GROUP_ID_0) != ADC_BUSY)
+  {
+    Adc_StartGroupConversion(ADC_GROUP_ID_0);
+  }
+  if (Adc_GetGroupStatus(ADC_GROUP_ID_1) != ADC_BUSY)
+  {
+    Adc_StartGroupConversion(ADC_GROUP_ID_1);
+  }
+}
+#endif
+
+/* Turns the pitch source into what AvacStat1 reads: sign, low pass, zero
+ * reference and a signal quality that does not latch CtrlDcm's Fail on a
+ * source that is merely not ready yet. Runs every 20 ms. */
+static void ILCU_LvlAdp_PitchCycle(void)
+{
+  sint16 Raw = 0;
+  sint32 Value;
+
+  if (ILCU_LvlAdp_BenchPitchEnable != 0u)
+  {
+    ILCU_LvlAdp_PitchOut = ILCU_LvlAdp_BenchPitch_0p1mrad;
+    ILCU_LvlAdp_PitchQty = SIG_VALID;
+  }
+  else if (ILCU_LevellingAdapter_GetPitchAngle(&Raw) == E_OK)
+  {
+    Value = (sint32)ILCU_LVLADP_PITCH_SIGN * (sint32)Raw;
+    ILCU_LvlAdp_PitchBadCnt = 0u;
+
+    if (ILCU_LvlAdp_PitchGoodCnt == 0u)
+    {
+      ILCU_LvlAdp_PitchFilt = Value * ILCU_LVLADP_PITCH_FILTER_DIV;   /* seed: no start-up ramp from 0 */
+    }
+    else
+    {
+      ILCU_LvlAdp_PitchFilt += Value - (ILCU_LvlAdp_PitchFilt / ILCU_LVLADP_PITCH_FILTER_DIV);
+    }
+    if (ILCU_LvlAdp_PitchGoodCnt < 0xFFFFu)
+    {
+      ILCU_LvlAdp_PitchGoodCnt++;
+    }
+    Value = ILCU_LvlAdp_PitchFilt / ILCU_LVLADP_PITCH_FILTER_DIV;
+
+#if (ILCU_LVLADP_PITCH_AUTO_ZERO == STD_ON)
+    if ((ILCU_LvlAdp_PitchRunning == FALSE) && (ILCU_LvlAdp_PitchGoodCnt > ILCU_LVLADP_PITCH_ZERO_SETTLE))
+    {
+      ILCU_LvlAdp_PitchZero    = Value;
+      ILCU_LvlAdp_PitchRunning = TRUE;
+    }
+#else
+    ILCU_LvlAdp_PitchRunning = TRUE;
+#endif
+    if (ILCU_LvlAdp_CalibRequest != 0u)
+    {
+      ILCU_LvlAdp_CalibRequest = 0u;
+      ILCU_LvlAdp_PitchZero    = Value;
+      ILCU_LvlAdp_PitchRunning = TRUE;
+    }
+
+    if (ILCU_LvlAdp_PitchRunning != FALSE)
+    {
+      Value -= ILCU_LvlAdp_PitchZero;
+      Value = (Value > 32767) ? 32767 : ((Value < -32768) ? -32768 : Value);
+      ILCU_LvlAdp_PitchOut = (sint16)Value;
+      ILCU_LvlAdp_PitchQty = SIG_VALID;
+    }
+  }
+  else
+  {
+    /* No usable sample: keep the last angle and quality (SIG_INIT before the first
+     * sample) until the limit is reached. Only then report SIG_INVALID, which sends
+     * CtrlDcm to Fail and latches "ignition needed". */
+    uint16 Limit = (ILCU_LvlAdp_PitchRunning != FALSE) ? (uint16)ILCU_LVLADP_PITCH_INVALID_DEBOUNCE
+                                                      : (uint16)ILCU_LVLADP_PITCH_STARTUP_TIMEOUT;
+    if (ILCU_LvlAdp_PitchBadCnt < Limit)
+    {
+      ILCU_LvlAdp_PitchBadCnt++;
+    }
+    else
+    {
+      ILCU_LvlAdp_PitchQty = SIG_INVALID;
+    }
+  }
+}
 
 /*============================================================================*/
 /* ILCU-facing API                                                            */
 /*============================================================================*/
 void ILCU_LevellingAdapter_Init(void)
 {
+  /* Park the LWR stage first. CddDcm writes EN only when its enable state changes,
+   * so a level left by Port_Init (PA3 starts high in Port_PBcfg.c) would survive. */
+  IoHwAb_User_SetDio_EN_DC(0u);
+  ILCU_LvlAdp_LwrPwmToIdle();
+
   /* DPE NvM defaults = what DPE NvM loads when no valid NV data exists */
   NvmBlockStatAvacPrj1Para = NvmInit_StatAvacPrj1ParaDefault;
   NvmBlockStatAvac1Para    = NvmInit_StatAvac1ParaDefault;
   NvmBlockStatAvacOp1Data  = NvmInit_StatAvacOp1DataDefault;
   NvmBlockDcMotorData      = NvmInit_ParaDcMotorDataDefault;
+
+  /* Demo timing: how long a pitch change must persist before AvacStat1 adjusts */
+  NvmBlockStatAvac1Para.nLoadChangeInterval = (sint16)ILCU_LVLADP_LOAD_CHANGE_INTERVAL;
 
   /* STUB: Pitch/Diag-owned block. 0xFF = zero-level programming done, which
    * CtrlDcm requires (TrainingState) to enter Customer mode. eASL_Present is
@@ -95,33 +238,69 @@ void ILCU_LevellingAdapter_Init(void)
   ILCU_LvlAdp_TimeUs  = 0u;
   ILCU_LvlAdp_TickCnt = 0u;
 
+  ILCU_LvlAdp_PitchFilt    = 0;
+  ILCU_LvlAdp_PitchZero    = 0;
+  ILCU_LvlAdp_PitchOut     = 0;
+  ILCU_LvlAdp_PitchQty     = SIG_INIT;
+  ILCU_LvlAdp_PitchGoodCnt = 0u;
+  ILCU_LvlAdp_PitchBadCnt  = 0u;
+  ILCU_LvlAdp_PitchRunning = FALSE;
+
   /* DPE init order (Rte_Cfg.c): AvacStat1 sets eASL_Present used by CtrlDcm */
   riAvacStat1_Init();
   riCddDcm_Init();
   riCtrlDcm_Init();
+
+  ILCU_LvlAdp_InitDone = TRUE;
 }
 
 void ILCU_LevellingAdapter_MainFunction(void)
 {
-  ILCU_LvlAdp_TimeUs += ILCU_LVLADP_MAIN_PERIOD_US;
-
-  ILCU_LvlAdp_TickCnt++;
-  if (ILCU_LvlAdp_TickCnt >= ILCU_LVLADP_20MS_DIVIDER)
+  /* Start-up order guard: the chain must not run before its Init */
+  if (ILCU_LvlAdp_InitDone != FALSE)
   {
-    ILCU_LvlAdp_TickCnt = 0u;
-    rpAvacStat1_Cycle0();
-    rpCtrlDcm_Cycle();
-  }
+#if (ILCU_LVLADP_START_ADC_GROUPS == STD_ON)
+    ILCU_LvlAdp_StartAdc();
+#endif
 
-  rpCddDcm_Cycle0();
+    ILCU_LvlAdp_TimeUs += ILCU_LVLADP_MAIN_PERIOD_US;
+
+    ILCU_LvlAdp_TickCnt++;
+    if (ILCU_LvlAdp_TickCnt >= ILCU_LVLADP_20MS_DIVIDER)
+    {
+      ILCU_LvlAdp_TickCnt = 0u;
+      ILCU_LvlAdp_PitchCycle();
+      rpAvacStat1_Cycle0();
+      rpCtrlDcm_Cycle();
+    }
+
+    rpCddDcm_Cycle0();
+  }
 }
 
 #ifndef ILCU_LVLADP_EXTERNAL_PITCH_SOURCE
 Std_ReturnType ILCU_LevellingAdapter_GetPitchAngle(sint16* Pitch_0p1mrad)
 {
-  /* STUB: fixed angle until the IMU module provides the pitch */
-  *Pitch_0p1mrad = (sint16)ILCU_LVLADP_STUB_PITCH_0P1MRAD;
-  return E_OK;
+  /* Default source: IARA pitch [0.01 deg], written by swc_iara every 10 ms.
+   * Usable once the IMU is initialised. A stalled IARA cannot be detected from
+   * here: no sample counter or plausibility flag is exported (PORT_CHANGES.md 11). */
+  sint32 Pitch_cdeg = Rte_Iara_TargetPitch_cdeg;
+
+  if (Pitch_cdeg > ILCU_LVLADP_PITCH_CDEG_LIMIT)
+  {
+    Pitch_cdeg = ILCU_LVLADP_PITCH_CDEG_LIMIT;
+  }
+  else if (Pitch_cdeg < -ILCU_LVLADP_PITCH_CDEG_LIMIT)
+  {
+    Pitch_cdeg = -ILCU_LVLADP_PITCH_CDEG_LIMIT;
+  }
+  else
+  {
+    /* in range */
+  }
+  *Pitch_0p1mrad = (sint16)((Pitch_cdeg * ILCU_LVLADP_CDEG_TO_0P1MRAD_NUM) / ILCU_LVLADP_CDEG_TO_0P1MRAD_DEN);
+
+  return (Rte_ImuInitResult == E_OK) ? E_OK : E_NOT_OK;
 }
 #endif
 
@@ -173,13 +352,10 @@ void IoHwAb_User_SetDio_EN_DC(uint8 ucSignal)
 
 void IoHwAbUser_GetAdc_VoltDC_OUT1(uint16* pio_signal)
 {
-  IoHwAb_ConvertedValueType Value_mV = 0u;
+  uint32 Value_mV = 0u;
 
   /* LWR_DC feedback, ADC1 ch0 (PA15). 0 on error, as DPE expects. */
-  if (IoHwAb_AnalogReadConverted(IOHWAB_CHID_ADIN_3, &Value_mV) != E_OK)
-  {
-    Value_mV = 0u;
-  }
+  (void)ILCU_LvlAdp_ReadDivider_mV(ILCU_LVLADP_LWRFB_RAW_CHID, &Value_mV);
   *pio_signal = (Value_mV > 0xFFFFu) ? 0xFFFFu : (uint16)Value_mV;
 }
 
@@ -206,10 +382,12 @@ void ILCU_LvlAdp_LwrPwmToIdle(void)
 
 Std_ReturnType Rte_Read_IoHwAb_User_GetAdc_DIAG_VBAT(tiu32Voltage_mV* ppara1)
 {
-  IoHwAb_VoltageType Vbat_mV = 0u;
-  Std_ReturnType     RetVal  = IoHwAb_VoltageKL30_Read(&Vbat_mV);
+  /* KL15, ADC0 ch5 (PB24). IoHwAb_VoltageKL30_Read is not used: it reads an
+   * ADC result slot that is never written and always returns 0 mV. */
+  uint32         Kl15_mV = 0u;
+  Std_ReturnType RetVal  = ILCU_LvlAdp_ReadDivider_mV(ILCU_LVLADP_KL15_RAW_CHID, &Kl15_mV);
 
-  *ppara1 = (RetVal == E_OK) ? (tiu32Voltage_mV)Vbat_mV : 0u;
+  *ppara1 = (tiu32Voltage_mV)Kl15_mV;
   return RetVal;
 }
 
@@ -225,18 +403,9 @@ Std_ReturnType Rte_Read_CodM_Pitch_Para(tsRteCodingParameters* ppara1)
 
 Std_ReturnType Rte_Read_Pitch_Angle(tPitch0* ppara1)
 {
-  sint16 Angle = 0;
-
-  if (ILCU_LevellingAdapter_GetPitchAngle(&Angle) == E_OK)
-  {
-    ILCU_LvlAdp_LastPitch = Angle;
-    ppara1->eSigQty = SIG_VALID;
-  }
-  else
-  {
-    ppara1->eSigQty = SIG_INVALID;
-  }
-  ppara1->nAngle     = ILCU_LvlAdp_LastPitch;
+  /* Prepared by ILCU_LvlAdp_PitchCycle() just before AvacStat1 runs */
+  ppara1->eSigQty    = ILCU_LvlAdp_PitchQty;
+  ppara1->nAngle     = ILCU_LvlAdp_PitchOut;
   ppara1->nHeightErr = 0;
   return E_OK;
 }
